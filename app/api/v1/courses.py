@@ -1,0 +1,69 @@
+from __future__ import annotations
+
+from flasgger import swag_from
+from flask import Blueprint, jsonify, request
+
+from app.api.v1.courses_docs import (
+    CREATE_COURSE_DOC,
+    GET_COURSE_DOC,
+    LIST_COURSES_DOC,
+    LIST_PAST_COURSES_DOC,
+    SEARCH_COURSES_DOC,
+)
+from app.dtos import CourseCreateIn, CourseListOut, CourseOut, CoursePastOut
+from app.services.courses import CourseService, NotFoundError
+
+courses_bp = Blueprint("courses", __name__)
+svc = CourseService()
+
+
+@courses_bp.get("")
+@swag_from(LIST_COURSES_DOC)
+def list_courses():
+    """List all courses."""
+    items = svc.list_courses()
+    return jsonify({"courses": [CourseListOut.model_validate(i).model_dump() for i in items]}), 200
+
+
+@courses_bp.get("/<int:course_id>")
+@swag_from(GET_COURSE_DOC)
+def get_course(course_id: int):
+    """Get a specific course by ID."""
+    try:
+        item = svc.get_course_by_id(course_id)
+        return jsonify(CourseOut.model_validate(item).model_dump()), 200
+    except NotFoundError:
+        return jsonify({"error": "Not found"}), 404
+
+
+@courses_bp.get("/past")
+@swag_from(LIST_PAST_COURSES_DOC)
+def list_past():
+    """List all past courses."""
+    items = svc.list_past_courses()
+    return jsonify({"courses": [CoursePastOut.model_validate(i).model_dump() for i in items]}), 200
+
+
+@courses_bp.get("/search")
+@swag_from(SEARCH_COURSES_DOC)
+def search_courses():
+    """Search for courses."""
+    q = (request.args.get("q") or "").strip()
+    items = svc.search_courses(q) if q else []
+    return jsonify({"courses": [CourseListOut.model_validate(i).model_dump() for i in items]}), 200
+
+@courses_bp.post("")
+@swag_from(CREATE_COURSE_DOC)
+def create_course():
+    """Create a new course."""
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+    try:
+        validated = CourseCreateIn.model_validate(data)
+        item = svc.create_course(validated)
+        return jsonify(CourseOut.model_validate(item).model_dump()), 201
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500
