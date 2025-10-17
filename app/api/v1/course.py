@@ -11,13 +11,13 @@ from app.api.v1.courses_docs import (
     SEARCH_COURSES_DOC,
 )
 from app.dtos import CourseCreateIn, CourseListOut, CourseOut, CoursePastOut
-from app.services.courses import CourseService, NotFoundError
+from app.services.course import CourseService, NotFoundError
 
-courses_bp = Blueprint("courses", __name__)
+course_bp = Blueprint("course", __name__)
 svc = CourseService()
 
 
-@courses_bp.get("")
+@course_bp.get("")
 @swag_from(LIST_COURSES_DOC)
 def list_courses():
     """List all courses."""
@@ -25,7 +25,7 @@ def list_courses():
     return jsonify({"courses": [CourseListOut.model_validate(i).model_dump() for i in items]}), 200
 
 
-@courses_bp.get("/<int:course_id>")
+@course_bp.get("/<int:course_id>")
 @swag_from(GET_COURSE_DOC)
 def get_course(course_id: int):
     """Get a specific course by ID."""
@@ -36,7 +36,7 @@ def get_course(course_id: int):
         return jsonify({"error": "Not found"}), 404
 
 
-@courses_bp.get("/past")
+@course_bp.get("/past")
 @swag_from(LIST_PAST_COURSES_DOC)
 def list_past():
     """List all past courses."""
@@ -44,7 +44,7 @@ def list_past():
     return jsonify({"courses": [CoursePastOut.model_validate(i).model_dump() for i in items]}), 200
 
 
-@courses_bp.get("/search")
+@course_bp.get("/search")
 @swag_from(SEARCH_COURSES_DOC)
 def search_courses():
     """Search for courses."""
@@ -52,7 +52,8 @@ def search_courses():
     items = svc.search_courses(q) if q else []
     return jsonify({"courses": [CourseListOut.model_validate(i).model_dump() for i in items]}), 200
 
-@courses_bp.post("")
+
+@course_bp.post("")
 @swag_from(CREATE_COURSE_DOC)
 def create_course():
     """Create a new course."""

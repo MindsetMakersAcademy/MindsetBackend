@@ -17,6 +17,8 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "dotenv>=0.9.9",
     "flasgger>=0.9.7.1",
+    "alembic>=1.17.0",
+    "rich-click>=1.9.3",
 ]
 
 

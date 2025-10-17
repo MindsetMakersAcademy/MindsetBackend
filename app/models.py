@@ -11,34 +11,33 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db import db
+from app.db import Base, db
 
 TEHRAN_TZ = ZoneInfo("Asia/Tehran")
 
-
-class DeliveryMode(db.Model):
+class DeliveryMode(Base):
     """
     Lookup for course/event delivery modes.
     """
     __tablename__ = "delivery_modes"
 
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
-    label: Mapped[str] = mapped_column(db.String(160), nullable=False)
+    label: Mapped[str] = mapped_column(db.String(160), nullable=False, unique=True)
     description: Mapped[str | None] = mapped_column(db.Text, nullable=True)
 
 
-class RegistrationStatus(db.Model):
+class RegistrationStatus(Base):
     """
     Lookup for registration statuses.
     """
     __tablename__ = "registration_statuses"
 
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
-    label: Mapped[str] = mapped_column(db.String(160), nullable=False)
+    label: Mapped[str] = mapped_column(db.String(160), nullable=False, unique=True)
     description: Mapped[str | None] = mapped_column(db.Text, nullable=True)
 
 
-class User(db.Model):
+class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
@@ -55,7 +54,7 @@ class User(db.Model):
     __table_args__ = (CheckConstraint("full_name <> ''", name="ck_user_full_name_not_empty"),)
 
 
-class Venue(db.Model):
+class Venue(Base):
     __tablename__ = "venues"
 
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
@@ -88,7 +87,7 @@ course_instructors = db.Table(
 )
 
 
-class Course(db.Model):
+class Course(Base):
     __tablename__ = "courses"
 
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
@@ -147,7 +146,7 @@ class Course(db.Model):
     )
 
 
-class Instructor(db.Model):
+class Instructor(Base):
     __tablename__ = "instructors"
 
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
@@ -164,7 +163,7 @@ class Instructor(db.Model):
     )
 
 
-class Registration(db.Model):
+class Registration(Base):
     """
     Normalized: one row per (course, user). Status references lookup table.
     """
@@ -198,7 +197,7 @@ class Registration(db.Model):
     __table_args__ = (UniqueConstraint("course_id", "user_id", name="uq_registration_course_user"),)
 
 
-class EventType(db.Model):
+class EventType(Base):
     """
     Lookup for event types (e.g., book_club, webinar, talk).
     """
@@ -215,7 +214,7 @@ class EventType(db.Model):
     )
 
 
-class Event(db.Model):
+class Event(Base):
     """
     Lightweight occurrences like a book-club session, talk, or meetup.
     Uses DeliveryMode lookup too (consistent with Course).

@@ -3,7 +3,7 @@ from __future__ import annotations
 from flasgger import Swagger
 from flask import Flask
 
-from app.api.v1.courses import courses_bp
+from app.api.v1.course import course_bp
 from app.cli import register_cli
 from app.config import Config
 from app.db import db, migrate
@@ -91,7 +91,7 @@ def create_app(config: type[Config] | None = None) -> Flask:
         "specs_route": "/docs",
     })
 
-    app.register_blueprint(courses_bp, url_prefix="/api/v1/courses")
+    app.register_blueprint(course_bp, url_prefix="/api/v1/courses")
 
     register_cli(app)
     
