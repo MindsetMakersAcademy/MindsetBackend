@@ -94,7 +94,36 @@ class ICourseRepository(ABC):
         """
         ...
 
-
+    @abstractmethod
+    def update_course(
+        self,
+        course_id: int,
+        *,
+        title: str | None = None,
+        description: str | None = None,
+        delivery_mode_id: int | None = None,
+        venue_id: int | None = None,
+        instructor_ids: list[int] | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        **kwargs: Any,
+    ) -> Course | None:
+        """Update an existing course.
+        
+        Args:
+            course_id: ID of course to update
+            title: New title (optional)
+            description: New description (optional)
+            delivery_mode_id: New delivery mode ID (optional)
+            venue_id: New venue ID (optional)
+            instructor_ids: New instructor IDs (optional)
+            start_date: New start date (optional)
+            end_date: New end date (optional)
+            **kwargs: Additional fields to update
+            
+        Returns:
+            Updated course with relationships loaded, or None if not found
+        """
 
 class CourseRepository(BaseRepository[Course], ICourseRepository):
     """Repository implementation for managing Course entities.
@@ -219,9 +248,7 @@ class CourseRepository(BaseRepository[Course], ICourseRepository):
 
         if instructor_ids:
             instructors = (
-                self.session.execute(
-                    select(Instructor).where(Instructor.id.in_(instructor_ids))
-                )
+                self.session.execute(select(Instructor).where(Instructor.id.in_(instructor_ids)))
                 .scalars()
                 .all()
             )
@@ -232,4 +259,70 @@ class CourseRepository(BaseRepository[Course], ICourseRepository):
         self.session.add(course)
         self.session.flush()
 
+        return course
+
+    def update_course(
+        self,
+        course_id: int,
+        *,
+        title: str | None = None,
+        description: str | None = None,
+        delivery_mode_id: int | None = None,
+        venue_id: int | None = None,
+        instructor_ids: list[int] | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        **kwargs: Any,
+    ) -> Course | None:
+        """Update an existing course.
+
+        Args:
+            course_id: ID of course to update
+            title: New title (optional)
+            description: New description (optional)
+            delivery_mode_id: New delivery mode ID (optional)
+            venue_id: New venue ID (optional)
+            instructor_ids: New instructor IDs (optional)
+            start_date: New start date (optional)
+            end_date: New end date (optional)
+            **kwargs: Additional fields to update
+
+        Returns:
+            Updated course with relationships loaded, or None if not found
+
+        Raises:
+            ValueError: If instructor IDs are invalid or dates are inconsistent
+        """
+        course = self.get_course_by_id(course_id)
+        if not course:
+            return None
+
+        if title is not None:
+            course.title = title
+        if description is not None:
+            course.description = description
+        if delivery_mode_id is not None:
+            course.delivery_mode_id = delivery_mode_id
+        if venue_id is not None:
+            course.venue_id = venue_id
+        if start_date is not None:
+            course.start_date = start_date
+        if end_date is not None:
+            course.end_date = end_date
+
+        for key, value in kwargs.items():
+            if hasattr(course, key) and value is not None:
+                setattr(course, key, value)
+
+        if instructor_ids is not None:
+            instructors = (
+                self.session.execute(select(Instructor).where(Instructor.id.in_(instructor_ids)))
+                .scalars()
+                .all()
+            )
+            if len(instructors) != len(instructor_ids):
+                raise ValueError("One or more instructor IDs were not found.")
+            course.instructors = list(instructors)
+
+        self.session.flush()
         return course

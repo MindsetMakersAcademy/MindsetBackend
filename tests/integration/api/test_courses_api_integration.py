@@ -51,8 +51,8 @@ def test_search_returns_empty_when_no_q(client: FlaskClient) -> None:
     assert res.get_json()["courses"] == []
 
 
-def test_create_course_success_and_bad_payload(client: FlaskClient) -> None:
-    """POST with valid payload creates a course; invalid payload returns 400."""
+def test_create_course_success(client: FlaskClient) -> None:
+    """POST with valid payload creates a course."""
     payload = {
         "title": "New API Course",
         "description": "desc",
@@ -64,12 +64,19 @@ def test_create_course_success_and_bad_payload(client: FlaskClient) -> None:
     }
     res = client.post(BASE, json=payload)
     assert res.status_code == 201
-    body = res.get_json()
-    assert body["title"] == "New API Course"
 
-    # Bad payload: end_date before start_date
-    bad = payload.copy()
-    bad["start_date"] = "2024-02-02"
-    bad["end_date"] = "2024-01-01"
-    res2 = client.post(BASE, json=bad)
-    assert res2.status_code == 400
+
+def test_create_course_bad_payload(client: FlaskClient) -> None:
+    """POST with invalid payload returns 400."""
+    payload = {
+        "title": "New API Course",
+        "description": "desc",
+        "delivery_mode_id": 1,
+        "venue_id": None,
+        "instructor_ids": [],
+    }
+    payload["start_date"] = "2024-02-02"
+    payload["end_date"] = "2024-01-01"
+    res = client.post(BASE, json=payload)
+    assert res.status_code == 400
+

@@ -2,6 +2,10 @@
 This repository contains the backend part of the Mindset website.
 A Flask-based REST API for managing course data, built with SQLAlchemy 2.0 and Pydantic v2.
 
+## Documentation
+
+- **[Database Schema & ERD](docs/DATABASE.md)** - Complete database entity relationship diagram, table definitions, and relationships
+
 ## Codebase Structure
 
 The project follows a clean, modular architecture:
@@ -43,6 +47,7 @@ Key components:
    - SQLAlchemy model definitions
    - Database schema representation
    - Type-safe with SQLAlchemy 2.0 annotations
+   - See [DATABASE.md](docs/DATABASE.md) for complete entity relationships and schema details
 
 5. **DTOs** (`app/dtos.py`)
    - Request/response data models
@@ -78,6 +83,10 @@ Key entities:
 - `DeliveryMode`: Lookup table for course formats
 - `Venue`: Physical/virtual locations
 - `Registration`: Student enrollments
+- `Event`: Standalone events (webinars, book clubs, talks)
+- `User`: System users who register for courses
+
+**For detailed schema information including relationships, constraints, and field definitions, see [DATABASE.md](docs/DATABASE.md).**
 
 ### Data Transfer Objects (`app/dtos.py`)
 
@@ -217,8 +226,8 @@ flask cli registration-status get 1
 
 ```bash
 flask cli venue list
-flask cli venue create "Main Hall" --address "123 Street" --room-capacity 50
-flask cli venue update 1 --name "Updated Hall"
+flask cli venue create "Place A" --address "Address A" --room-capacity 50
+flask cli venue update 1 --name "Updated Place A"
 flask cli venue delete 1
 flask cli venue get 1
 ```
@@ -246,7 +255,7 @@ pip install -e .[dev]
 pytest
 ```
 
-Read more about the testing strategy and conventions in TESTING.md.
+Read more about the testing strategy and conventions in [TESTING.md](./docs/TESTING.md).
 
 ### Testing
 
@@ -264,7 +273,7 @@ Run a single test file:
 pytest tests/unit/services/test_course_service.py -q
 ```
 
-For more details on the testing strategy, fixtures, and conventions see [TESTING.md](./TESTING.md).
+For more details on the testing strategy, fixtures, and conventions see [TESTING.md](./docs/TESTING.md).
 
 Code quality:
 ```bash

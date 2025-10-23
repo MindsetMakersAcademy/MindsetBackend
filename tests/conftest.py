@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Generator, Sequence
-from datetime import date
+from datetime import date, datetime
 from typing import Any, Generic, Literal, Protocol, Self, TypeVar
 
 import pytest
@@ -9,16 +9,24 @@ from flask.testing import FlaskClient
 
 from app import create_app
 from app.api.v1 import course as course_api_module
-from app.models import Course, DeliveryMode, EventType, RegistrationStatus, Venue
+from app.models import Course, DeliveryMode, EventType, Instructor, RegistrationStatus, Venue
 from app.repositories import (
     ICourseRepository,
     IDeliveryModeRepository,
     IEventTypeRepository,
+    IInstructorRepository,
     IRegistrationStatusRepository,
 )
+from app.exceptions import NotFoundError
 from app.services.course import CourseService
 
-ModelT = TypeVar("ModelT", bound=Course | DeliveryMode | EventType | RegistrationStatus | Venue)
+ModelT = TypeVar(
+    "ModelT", bound=Course | DeliveryMode | EventType | RegistrationStatus | Venue | Instructor
+)
+
+
+# --- Fake Repositories ---
+
 
 class DictFakeRepo(Generic[ModelT]):
     def __init__(self) -> None:
@@ -185,6 +193,61 @@ class FakeRegistrationStatusRepository(
         return self.add(entity)
 
 
+class FakeInstructorRepository(IInstructorRepository, DictFakeRepo[Instructor]):
+    def get_by_id(self, id_: int) -> Instructor | None:
+        return self.get(id_)
+
+    def get_by_email(self, email: str) -> Instructor | None:
+        return next((i for i in self._store.values() if i.email == email), None)
+
+    def _sort_key(self, key: str):
+        return (lambda e: e.id) if key == "id" else (lambda e: e.full_name)
+
+    def list(
+        self,
+        *,
+        q: str | None = None,
+        sort: str = "full_name",
+        direction: Literal["asc", "desc"] = "asc",
+    ) -> list[Instructor]:
+        items = list(self._store.values())
+        if q:
+            qcf = q.casefold()
+            items = [i for i in items if qcf in i.full_name.casefold()]
+        items.sort(key=self._sort_key(sort), reverse=(direction == "desc"))
+        return items
+
+    def create(
+        self,
+        *,
+        full_name: str,
+        email: str | None = None,
+        phone: str | None = None,
+        bio: str | None = None,
+    ) -> Instructor:
+        entity = Instructor(full_name=full_name, email=email, phone=phone, bio=bio)
+        return self.add(entity)
+
+    def update(
+        self,
+        entity: Instructor,
+        *,
+        full_name: str | None = None,
+        email: str | None = None,
+        phone: str | None = None,
+        bio: str | None = None,
+    ) -> Instructor:
+        if full_name is not None:
+            entity.full_name = full_name
+        if email is not None:
+            entity.email = email
+        if phone is not None:
+            entity.phone = phone
+        if bio is not None:
+            entity.bio = bio
+        return self.add(entity)
+
+
 class FakeCourseRepository(DictFakeRepo[Course], ICourseRepository):
     def list_courses(self, limit: int | None = None, offset: int = 0) -> Sequence[Course]:
         items = list(self._store.values())
@@ -240,19 +303,62 @@ class FakeCourseRepository(DictFakeRepo[Course], ICourseRepository):
             pass
         return self.add(course)
 
-
     def add(self, entity: Course) -> Course:
         try:
-            from app.models import DeliveryMode
-
-            if getattr(entity, "delivery_mode_id", None) is not None and getattr(entity, "delivery_mode", None) is None:
-                entity.delivery_mode = DeliveryMode(id=entity.delivery_mode_id, label=f"dm-{entity.delivery_mode_id}")
+            if (
+                getattr(entity, "delivery_mode_id", None) is not None
+                and getattr(entity, "delivery_mode", None) is None
+            ):
+                entity.delivery_mode = DeliveryMode(
+                    id=entity.delivery_mode_id, label=f"dm-{entity.delivery_mode_id}"
+                )
         except Exception:
             pass
         return super().add(entity)
 
+    def update_course(
+        self,
+        course_id: int,
+        *,
+        title: str | None = None,
+        description: str | None = None,
+        delivery_mode_id: int | None = None,
+        venue_id: int | None = None,
+        instructor_ids: list[int] | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        **kwargs: Any,
+    ) -> Course | None:
+        
+        record = self._store.get(course_id)
+        # FIXME: This need to get fixed properly
+        if not record: 
+            raise NotFoundError()
+        if title:
+            record.title = title
+        if description:
+            record.description = description
+        if delivery_mode_id:
+            record.delivery_mode_id = delivery_mode_id
+        if venue_id:
+            record.venue_id = venue_id
+        if instructor_ids:
+            record.instructors += (instructor_ids)
+        if start_date:
+            record.start_date = start_date
+        if end_date:
+            record.end_date = end_date
+
 
 # --- Fixtures ---
+
+
+@pytest.fixture
+def client(fake_courses: FakeCourseRepository) -> Generator[FlaskClient, Any]:
+    app = create_app()
+    course_api_module.svc = CourseService(session=None, repo=fake_courses)
+    with app.test_client() as c:
+        yield c
 
 
 @pytest.fixture
@@ -290,6 +396,14 @@ def fake_courses() -> FakeCourseRepository:
 @pytest.fixture
 def fake_venues() -> DictFakeRepo[Venue]:
     return DictFakeRepo()
+
+
+@pytest.fixture
+def fake_instructors() -> FakeInstructorRepository:
+    return FakeInstructorRepository()
+
+
+# --- Dummies ---
 
 
 class _DummyCtx:
@@ -335,12 +449,7 @@ def dummy_session() -> _TestSessionProtocol:
     return _DummySession()
 
 
-@pytest.fixture
-def client(fake_courses: FakeCourseRepository) -> Generator[FlaskClient, Any]:
-    app = create_app()
-    course_api_module.svc = CourseService(session=None, repo=fake_courses)
-    with app.test_client() as c:
-        yield c
+# --- Helpers ---
 
 
 @pytest.fixture

@@ -1,17 +1,18 @@
 from __future__ import annotations
 
-from flasgger import swag_from
+from flasgger import swag_from  # type: ignore
 from flask import Blueprint, jsonify, request
 
-from app.api.v1.courses_docs import (
+from app.api.v1.swagger_docs import (
     CREATE_COURSE_DOC,
     GET_COURSE_DOC,
     LIST_COURSES_DOC,
     LIST_PAST_COURSES_DOC,
     SEARCH_COURSES_DOC,
 )
-from app.dtos import CourseCreateIn, CourseListOut, CourseOut, CoursePastOut
-from app.services.course import CourseService, NotFoundError
+from app.dtos import CourseCreateIn, CourseListOut, CourseOut, CoursePastOut, CourseUpdateIn
+from app.exceptions import NotFoundError
+from app.services.course import CourseService
 
 course_bp = Blueprint("course", __name__)
 svc = CourseService()
@@ -68,3 +69,20 @@ def create_course():
         return jsonify({"error": str(e)}), 400
     except Exception:
         return jsonify({"error": "Internal server error"}), 500
+    
+
+@course_bp.put("/<int:course_id>")
+#TODO: Add swagger doc for this
+def update_course(course_id: int):
+    """Update an existing course."""
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+    try:
+        validated = CourseUpdateIn.model_validate(data)
+        item = svc.update_course(course_id, validated)
+        return jsonify(CourseOut.model_validate(item).model_dump()), 200
+    except NotFoundError:
+        return jsonify({"error": "Not found"}), 404
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400

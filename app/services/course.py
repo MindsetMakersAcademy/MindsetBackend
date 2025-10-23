@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from sqlalchemy.orm import Session, scoped_session
 
 from app.db import db
-from app.dtos import CourseCreateIn, CourseOut, CoursePastOut
+from app.dtos import CourseCreateIn, CourseOut, CoursePastOut, CourseUpdateIn
 from app.exceptions import NotFoundError
 from app.repositories.course import CourseRepository, ICourseRepository
 
@@ -63,7 +63,7 @@ class CourseService:
         rows = self.repo.list_past_courses()
         return [CoursePastOut.model_validate(r) for r in rows]
 
-    def search_courses(self, q: str) -> Sequence[CoursePastOut]:
+    def search_courses(self, q: str) -> list[CoursePastOut]:
         """Search all courses by title.
 
         Args:
@@ -79,4 +79,24 @@ class CourseService:
     def create_course(self, data: CourseCreateIn) -> CourseOut:
         """Create a new course using validated DTO."""
         row = self.repo.create_course(**data.model_dump())
+        return CourseOut.model_validate(row)
+    
+    def update_course(self, course_id: int, data: CourseUpdateIn) -> CourseOut:
+        """Update an existing course.
+        
+        Args:
+            course_id: ID of course to update
+            data: Validated update data
+            
+        Returns:
+            Updated course DTO
+            
+        Raises:
+            NotFoundError: If course doesn't exist
+            ValueError: If update data is invalid
+        """
+        with self.session.begin():
+            row = self.repo.update_course(course_id, **data.model_dump(exclude_none=True))
+            if not row:
+                raise NotFoundError(f"Course {course_id} not found")
         return CourseOut.model_validate(row)

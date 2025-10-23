@@ -1,9 +1,37 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+
+class PaginationQueryDTO(BaseModel):
+    """DTO for pagination query parameters."""
+    page: int = Field(default=1, ge=1, description="Page number (1-indexed)")
+    page_size: int = Field(default=20, ge=1, le=100, description="Items per page")
+    
+    @property
+    def offset(self) -> int:
+        """Calculate offset for database query."""
+        return (self.page - 1) * self.page_size
+
+
+class SortQueryDTO(BaseModel):
+    """DTO for sorting query parameters."""
+    sort: str = Field(default="id", description="Field to sort by")
+    direction: Literal["asc", "desc"] = Field(default="asc", description="Sort direction")
+
+
+class SearchQueryDTO(BaseModel):
+    """DTO for search query parameters."""
+    q: str | None = Field(default=None, min_length=1, max_length=100, description="Search query")
+    
+    @field_validator("q")
+    @classmethod
+    def strip_whitespace(cls, v: str | None) -> str | None:
+        """Strip whitespace from query string."""
+        return v.strip() if v else None
 
 class RegistrationStatusBaseDTO(BaseModel):
     """Shared fields for RegistrationStatus."""
@@ -51,6 +79,30 @@ class InstructorOut(BaseModel):
     bio: str | None = None
     model_config = ConfigDict(from_attributes=True)
 
+class InstructorCreateDTO(BaseModel):
+    """DTO for creating an instructor."""
+    full_name: str = Field(..., min_length=1, max_length=120)
+    email: str | None = Field(None, max_length=160)
+    phone: str | None = Field(None, max_length=40)
+    bio: str | None = None
+
+
+class InstructorUpdateDTO(BaseModel):
+    """DTO for updating an instructor."""
+    full_name: str | None = Field(None, min_length=1, max_length=120)
+    email: str | None = Field(None, max_length=160)
+    phone: str | None = Field(None, max_length=40)
+    bio: str | None = None
+
+
+class InstructorReadDTO(BaseModel):
+    """DTO for reading instructor data."""
+    id: int
+    full_name: str
+    email: str | None = None
+    phone: str | None = None
+    bio: str | None = None
+    model_config = ConfigDict(from_attributes=True)
 
 class CourseOut(BaseModel):
     """Output DTO for full Course details, including relationships."""
@@ -97,6 +149,7 @@ class CoursePastOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+# TODO: Add validation logic in DTO layer for creation
 class CourseCreateIn(BaseModel):
     """Input DTO for creating a course. Only fields accepted from client."""
 
