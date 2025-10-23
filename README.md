@@ -246,6 +246,26 @@ pip install -e .[dev]
 pytest
 ```
 
+Read more about the testing strategy and conventions in TESTING.md.
+
+### Testing
+
+Short guide to run tests locally and run a single test file or folder.
+
+Run the full test suite:
+
+```bash
+pytest
+```
+
+Run a single test file:
+
+```bash
+pytest tests/unit/services/test_course_service.py -q
+```
+
+For more details on the testing strategy, fixtures, and conventions see [TESTING.md](./TESTING.md).
+
 Code quality:
 ```bash
 ruff check . && ruff format .

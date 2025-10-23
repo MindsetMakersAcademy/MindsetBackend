@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class RegistrationStatusBaseDTO(BaseModel):
@@ -21,15 +21,14 @@ class RegistrationStatusUpdateDTO(BaseModel):
 class RegistrationStatusReadDTO(RegistrationStatusBaseDTO):
     """Returned when fetching RegistrationStatus entries."""
     id: int
-    class Config:
-        from_attributes = True 
+    model_config = ConfigDict(from_attributes=True)
 
 class DeliveryModeOut(BaseModel):
     """Output DTO for DeliveryMode entity."""
     id: int
     label: str
     description: str | None = None
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True) 
 
 
 class VenueOut(BaseModel):
@@ -39,7 +38,7 @@ class VenueOut(BaseModel):
     address: str | None = None
     map_url: str | None = None
     room_capacity: int | None = None
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class InstructorOut(BaseModel):
@@ -50,7 +49,7 @@ class InstructorOut(BaseModel):
     phone: str | None = None
     email: str | None = None
     bio: str | None = None
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CourseOut(BaseModel):
@@ -67,7 +66,7 @@ class CourseOut(BaseModel):
     delivery_mode: DeliveryModeOut
     venue: VenueOut | None = None
     instructors: list[InstructorOut] = []
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CourseListOut(BaseModel):
@@ -78,7 +77,7 @@ class CourseListOut(BaseModel):
     description: str | None = None
     start_date: date | None = None
     end_date: date | None = None
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CoursePastOut(BaseModel):
@@ -95,7 +94,7 @@ class CoursePastOut(BaseModel):
     delivery_mode: DeliveryModeOut
     venue: VenueOut | None = None
     instructors: list[InstructorOut] = []
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CourseCreateIn(BaseModel):
@@ -140,8 +139,7 @@ class DeliveryModeUpdateDTO(BaseModel):
 
 class DeliveryModeReadDTO(DeliveryModeBaseDTO):
     id: int
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class EventTypeBaseDTO(BaseModel):
     label: str = Field(..., description="Event type label")
@@ -156,8 +154,7 @@ class EventTypeUpdateDTO(BaseModel):
 
 class EventTypeReadDTO(EventTypeBaseDTO):
     id: int
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class VenueCreateDTO(BaseModel):
     name: str
@@ -180,5 +177,4 @@ class VenueReadDTO(BaseModel):
     map_url: str | None = None
     notes: str | None = None
     room_capacity: int | None = None
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
