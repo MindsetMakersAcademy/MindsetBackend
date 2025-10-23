@@ -167,7 +167,6 @@ class Registration(Base):
     """
     Normalized: one row per (course, user). Status references lookup table.
     """
-
     __tablename__ = "registrations"
 
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
@@ -219,7 +218,6 @@ class Event(Base):
     Lightweight occurrences like a book-club session, talk, or meetup.
     Uses DeliveryMode lookup too (consistent with Course).
     """
-
     __tablename__ = "events"
 
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)

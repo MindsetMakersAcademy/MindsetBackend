@@ -19,6 +19,7 @@ dependencies = [
     "flasgger>=0.9.7.1",
     "alembic>=1.17.0",
     "rich-click>=1.9.3",
+    "pytest>=8.4.2",
 ]
 
 

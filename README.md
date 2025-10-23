@@ -150,6 +150,84 @@ Environment variables:
 - `SECRET_KEY` - Flask secret key
 - `SQL_ECHO` - Enable SQL logging (1/0)
 
+
+## 🧭 Command Line Interface (CLI)
+
+The project includes a structured CLI for **database and reference data management**, built with **rich-click**.
+
+### General CLI Usage
+
+```bash
+flask cli --help
+flask cli <command> --help
+```
+
+
+### 🗄️ Database Operations
+
+```bash
+flask cli db init                # Initialize database schema
+flask cli db seed                # Seed all reference data
+flask cli db seed-modes          # Seed delivery modes
+flask cli db seed-event-types    # Seed event types
+flask cli db seed-registration-statuses
+```
+
+
+### 🚚 Delivery Modes
+
+```bash
+flask cli delivery-mode list
+flask cli delivery-mode create "Online" -D "Remote sessions"
+flask cli delivery-mode update 1 --label "In-Person"
+flask cli delivery-mode delete 1
+flask cli delivery-mode get 1
+```
+
+Options:
+
+* `-q` — query by label
+* `--json` — JSON output
+* `--sort` / `--dir` — sorting and ordering
+
+
+### 📅 Event Types
+
+```bash
+flask cli event-type list
+flask cli event-type create "Webinar"
+flask cli event-type update 1 --label "Talk"
+flask cli event-type delete 1
+flask cli event-type get 1
+```
+
+
+### 🪄 Registration Status
+
+```bash
+flask cli registration-status list
+flask cli registration-status create "Registered" -D "Fully confirmed"
+flask cli registration-status update 2 --label "Waitlisted"
+flask cli registration-status delete 2
+flask cli registration-status get 1
+```
+
+
+### 🏛️ Venue Management
+
+```bash
+flask cli venue list
+flask cli venue create "Main Hall" --address "123 Street" --room-capacity 50
+flask cli venue update 1 --name "Updated Hall"
+flask cli venue delete 1
+flask cli venue get 1
+```
+
+Options:
+
+* `--address`, `--map-url`, `--notes`, `--room-capacity`
+* `--json` for machine-readable output
+
 ## API Documentation
 
 Swagger UI available at `/docs` after startup. Key endpoints:

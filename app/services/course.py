@@ -27,11 +27,11 @@ class CourseService:
         self.session = session or db.session
         self.repo = repo or CourseRepository(session)
 
-    def list_courses(self) -> Sequence[CoursePastOut]:
+    def list_courses(self) -> list[CoursePastOut]:
         """List all courses as DTOs.
 
         Returns:
-            Sequence of all courses ordered by date.
+            List of all courses ordered by date.
         """
         rows = self.repo.list_courses()
         return [CoursePastOut.model_validate(r) for r in rows]
