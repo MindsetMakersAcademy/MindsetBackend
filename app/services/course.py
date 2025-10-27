@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, scoped_session
 from app.db import db
 from app.dtos import CourseCreateIn, CourseOut, CoursePastOut, CourseUpdateIn
 from app.exceptions import NotFoundError
+from app.models import Course
 from app.repositories.course import CourseRepository, ICourseRepository
 
 
@@ -100,3 +101,19 @@ class CourseService:
             if not row:
                 raise NotFoundError(f"Course {course_id} not found")
         return CourseOut.model_validate(row)
+    
+    def delete_course(self, course_id: int) -> Course:
+        """
+        Delete an existing course.
+
+        Args:
+            course_id: ID of course to delete
+
+        Raises:
+            NotFoundError: If course does not exist
+        """
+        with self.session.begin():
+            row = self.repo.delete_course(course_id)
+            if row is None:
+                raise NotFoundError(f"Course {course_id} not found")
+            return row

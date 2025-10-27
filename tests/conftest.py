@@ -1,493 +1,140 @@
 from __future__ import annotations
 
-from collections.abc import Generator, Sequence
-from datetime import date, datetime
-from typing import Any, Generic, Literal, Protocol, Self, TypeVar
+from collections.abc import Generator
+from datetime import datetime
+from pathlib import Path
 
 import pytest
 from flask.testing import FlaskClient
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 from app import create_app
 from app.api.v1 import course as course_api_module
-from app.models import Course, DeliveryMode, EventType, Instructor, RegistrationStatus, Venue
-from app.repositories import (
-    ICourseRepository,
-    IDeliveryModeRepository,
-    IEventTypeRepository,
-    IInstructorRepository,
-    IRegistrationStatusRepository,
-)
-from app.exceptions import NotFoundError
+from app.api.v1 import instructor as instructor_api_module
+from app.db import Base, db
+from app.repositories import CourseRepository, DeliveryModeRepository, InstructorRepository
 from app.services.course import CourseService
-
-ModelT = TypeVar(
-    "ModelT", bound=Course | DeliveryMode | EventType | RegistrationStatus | Venue | Instructor
-)
-
-
-# --- Fake Repositories ---
-
-
-class DictFakeRepo(Generic[ModelT]):
-    def __init__(self) -> None:
-        self._store: dict[int, ModelT] = {}
-        self._next_id: int = 1
-
-    def _ensure_id(self, obj: Any) -> int:
-        cur = getattr(obj, "id", None)
-        if not isinstance(cur, int) or cur <= 0:
-            obj.id = self._next_id
-            cur = self._next_id
-            self._next_id += 1
-        return cur
-
-    def get(self, id_: int) -> ModelT | None:
-        return self._store.get(id_)
-
-    def add(self, entity: ModelT) -> ModelT:
-        eid = self._ensure_id(entity)
-        self._store[eid] = entity
-        return entity
-
-    def delete(self, entity: ModelT) -> None:
-        eid = getattr(entity, "id", None)
-        if isinstance(eid, int):
-            self._store.pop(eid, None)
-
-    def list_all(self, limit: int = 100, offset: int = 0) -> Sequence[ModelT]:
-        rows = list(self._store.values())
-        return rows[offset : offset + limit]
-
-    def seed(self, *entities: ModelT) -> None:
-        for e in entities:
-            self.add(e)
-
-    def clear(self) -> None:
-        self._store.clear()
-        self._next_id = 1
-
-
-class FakeDeliveryModeRepository(DictFakeRepo[DeliveryMode], IDeliveryModeRepository):
-    def get_by_id(self, id_: int) -> DeliveryMode | None:
-        return self.get(id_)
-
-    def get_by_label(self, label: str) -> DeliveryMode | None:
-        lab = label.casefold()
-        return next((dm for dm in self._store.values() if dm.label.casefold() == lab), None)
-
-    def _sort_key(self, key: str):
-        return (lambda e: e.id) if key == "id" else (lambda e: e.label)
-
-    def list(
-        self,
-        *,
-        q: str | None = None,
-        sort: str = "label",
-        direction: Literal["asc", "desc"] = "asc",
-    ) -> list[DeliveryMode]:
-        items = list(self._store.values())
-        if q:
-            qcf = q.casefold()
-            items = [e for e in items if qcf in e.label.casefold()]
-        items.sort(key=self._sort_key(sort), reverse=(direction == "desc"))
-        return items
-
-    def create(self, *, label: str, description: str | None = None) -> DeliveryMode:
-        dm = DeliveryMode(label=label, description=description)
-        return self.add(dm)
-
-    def update(
-        self, entity: DeliveryMode, *, label: str | None = None, description: str | None = None
-    ) -> DeliveryMode:
-        if label is not None:
-            entity.label = label
-        if description is not None:
-            entity.description = description
-        return self.add(entity)
-
-
-class FakeEventTypeRepository(DictFakeRepo[EventType], IEventTypeRepository):
-    def get_by_id(self, id_: int) -> EventType | None:
-        return self.get(id_)
-
-    def get_by_label(self, label: str) -> EventType | None:
-        lab = label.casefold()
-        return next((et for et in self._store.values() if et.label.casefold() == lab), None)
-
-    def _sort_key(self, key: str):
-        return (lambda e: e.id) if key == "id" else (lambda e: e.label)
-
-    def list(
-        self,
-        *,
-        q: str | None = None,
-        sort: str = "label",
-        direction: Literal["asc", "desc"] = "asc",
-    ) -> list[EventType]:
-        items = list(self._store.values())
-        if q:
-            qcf = q.casefold()
-            items = [e for e in items if qcf in e.label.casefold()]
-        items.sort(key=self._sort_key(sort), reverse=(direction == "desc"))
-        return items
-
-    def create(self, *, label: str, description: str | None = None) -> EventType:
-        et = EventType(label=label, description=description)
-        return self.add(et)
-
-    def update(
-        self, entity: EventType, *, label: str | None = None, description: str | None = None
-    ) -> EventType:
-        if label is not None:
-            entity.label = label
-        if description is not None:
-            entity.description = description
-        return self.add(entity)
-
-
-class FakeRegistrationStatusRepository(
-    DictFakeRepo[RegistrationStatus], IRegistrationStatusRepository
-):
-    def get_by_id(self, id_: int) -> RegistrationStatus | None:
-        return self.get(id_)
-
-    def get_by_label(self, label: str) -> RegistrationStatus | None:
-        lab = label.casefold()
-        return next((rs for rs in self._store.values() if rs.label.casefold() == lab), None)
-
-    def _sort_key(self, key: str):
-        return (lambda e: e.id) if key == "id" else (lambda e: e.label)
-
-    def _sort_column(self, key: str):
-        return (lambda e: e.id) if key == "id" else (lambda e: e.label)
-
-    def list(
-        self,
-        *,
-        q: str | None = None,
-        sort: str = "label",
-        direction: Literal["asc", "desc"] = "asc",
-    ) -> list[RegistrationStatus]:
-        items = list(self._store.values())
-        if q:
-            qcf = q.casefold()
-            items = [e for e in items if qcf in e.label.casefold()]
-        items.sort(key=self._sort_key(sort), reverse=(direction == "desc"))
-        return items
-
-    def create(self, *, label: str, description: str | None = None) -> RegistrationStatus:
-        rs = RegistrationStatus(label=label, description=description)
-        return self.add(rs)
-
-    def update(
-        self,
-        entity: RegistrationStatus,
-        *,
-        label: str | None = None,
-        description: str | None = None,
-    ) -> RegistrationStatus:
-        if label is not None:
-            entity.label = label
-        if description is not None:
-            entity.description = description
-        return self.add(entity)
-
-
-class FakeInstructorRepository(IInstructorRepository, DictFakeRepo[Instructor]):
-    def get_by_id(self, id_: int) -> Instructor | None:
-        return self.get(id_)
-
-    def get_by_email(self, email: str) -> Instructor | None:
-        return next((i for i in self._store.values() if i.email == email), None)
-
-    def _sort_key(self, key: str):
-        return (lambda e: e.id) if key == "id" else (lambda e: e.full_name)
-
-    def list(
-        self,
-        *,
-        q: str | None = None,
-        sort: str = "full_name",
-        direction: Literal["asc", "desc"] = "asc",
-    ) -> list[Instructor]:
-        items = list(self._store.values())
-        if q:
-            qcf = q.casefold()
-            items = [i for i in items if qcf in i.full_name.casefold()]
-        items.sort(key=self._sort_key(sort), reverse=(direction == "desc"))
-        return items
-
-    def create(
-        self,
-        *,
-        full_name: str,
-        email: str | None = None,
-        phone: str | None = None,
-        bio: str | None = None,
-    ) -> Instructor:
-        entity = Instructor(full_name=full_name, email=email, phone=phone, bio=bio)
-        return self.add(entity)
-
-    def update(
-        self,
-        entity: Instructor,
-        *,
-        full_name: str | None = None,
-        email: str | None = None,
-        phone: str | None = None,
-        bio: str | None = None,
-    ) -> Instructor:
-        if full_name is not None:
-            entity.full_name = full_name
-        if email is not None:
-            entity.email = email
-        if phone is not None:
-            entity.phone = phone
-        if bio is not None:
-            entity.bio = bio
-        return self.add(entity)
-
-
-class FakeCourseRepository(DictFakeRepo[Course], ICourseRepository):
-    def list_courses(self, limit: int | None = None, offset: int = 0) -> Sequence[Course]:
-        items = list(self._store.values())
-        items.sort(key=lambda c: ((c.end_date or date.min), c.id), reverse=True)
-        return items[offset : offset + limit] if limit is not None else items
-
-    def get_course_by_id(self, course_id: int) -> Course | None:
-        return self.get(course_id)
-
-    def list_past_courses(self) -> Sequence[Course]:
-        today = date.today()
-        items = [c for c in self._store.values() if c.end_date and c.end_date < today]
-        items.sort(key=lambda c: ((c.end_date or date.min), c.id), reverse=True)
-        return items
-
-    def search_courses(self, q: str) -> Sequence[Course]:
-        qcf = q.casefold()
-        items = [c for c in self._store.values() if qcf in c.title.casefold()]
-        items.sort(key=lambda c: ((c.end_date or date.min), c.id), reverse=True)
-        return items
-
-    def create_course(
-        self,
-        *,
-        title: str,
-        description: str | None,
-        delivery_mode_id: int,
-        venue_id: int | None,
-        instructor_ids: list[int],
-        start_date: date | None,
-        end_date: date | None,
-        **kwargs: Any,
-    ) -> Course:
-        if not title:
-            raise ValueError("title is required")
-        if start_date and end_date and end_date < start_date:
-            raise ValueError("end_date cannot be before start_date")
-
-        course = Course(
-            title=title,
-            description=description,
-            delivery_mode_id=delivery_mode_id,
-            venue_id=venue_id,
-            start_date=start_date,
-            end_date=end_date,
-            **{k: v for k, v in kwargs.items() if hasattr(Course, k)},
-        )
-        try:
-            if delivery_mode_id is not None:
-                dm = DeliveryMode(id=delivery_mode_id, label=f"dm-{delivery_mode_id}")
-                course.delivery_mode = dm
-        except Exception:
-            pass
-        return self.add(course)
-
-    def add(self, entity: Course) -> Course:
-        try:
-            if (
-                getattr(entity, "delivery_mode_id", None) is not None
-                and getattr(entity, "delivery_mode", None) is None
-            ):
-                entity.delivery_mode = DeliveryMode(
-                    id=entity.delivery_mode_id, label=f"dm-{entity.delivery_mode_id}"
-                )
-        except Exception:
-            pass
-        return super().add(entity)
-
-    def update_course(
-        self,
-        course_id: int,
-        *,
-        title: str | None = None,
-        description: str | None = None,
-        delivery_mode_id: int | None = None,
-        venue_id: int | None = None,
-        instructor_ids: list[int] | None = None,
-        start_date: datetime | None = None,
-        end_date: datetime | None = None,
-        **kwargs: Any,
-    ) -> Course | None:
-        
-        record = self._store.get(course_id)
-        # FIXME: This need to get fixed properly
-        if not record: 
-            raise NotFoundError()
-        if title:
-            record.title = title
-        if description:
-            record.description = description
-        if delivery_mode_id:
-            record.delivery_mode_id = delivery_mode_id
-        if venue_id:
-            record.venue_id = venue_id
-        if instructor_ids:
-            record.instructors += (instructor_ids)
-        if start_date:
-            record.start_date = start_date
-        if end_date:
-            record.end_date = end_date
-
-
-# --- Fixtures ---
+from app.services.instructor import InstructorService
 
 
 @pytest.fixture
-def client(fake_courses: FakeCourseRepository) -> Generator[FlaskClient, Any]:
+def file_engine(tmp_path: Path):
+    """
+    Per-test SQLite file database. This avoids teardown conflicts
+    with Flask-SQLAlchemy and gives each test a fully isolated DB.
+    """
+    db_file = tmp_path / "test.db"
+    engine = create_engine(f"sqlite+pysqlite:///{db_file}", future=True)
+    with engine.connect() as conn:
+        conn.execute(text("PRAGMA foreign_keys=ON"))
+    Base.metadata.create_all(engine)
+    try:
+        yield engine
+    finally:
+        # drop everything for good measure
+        Base.metadata.drop_all(engine)
+        engine.dispose()
+
+
+@pytest.fixture
+def scoped_test_session(file_engine):
+    """
+    Flask-SQLAlchemy works with a *scoped_session*. We create one bound
+    to the per-test file engine so teardown can safely call .remove().
+    """
+    SessionLocal = scoped_session(
+        sessionmaker(bind=file_engine, future=True, expire_on_commit=False)
+    )
+    try:
+        yield SessionLocal
+    finally:
+        # make sure Flask teardown sees a clean scoped session
+        SessionLocal.remove()
+
+
+@pytest.fixture
+def course_repo(scoped_test_session) -> CourseRepository:
+    return CourseRepository(session=scoped_test_session)
+
+@pytest.fixture
+def instructor_repo(scoped_test_session) -> InstructorRepository:
+    return InstructorRepository(session=scoped_test_session)
+
+
+@pytest.fixture
+def delivery_mode_repo(scoped_test_session) -> DeliveryModeRepository:
+    return DeliveryModeRepository(session=scoped_test_session)
+
+
+@pytest.fixture
+def course_svc(course_repo, scoped_test_session) -> CourseService:
+    return CourseService(session=scoped_test_session, repo=course_repo)
+
+@pytest.fixture
+def instructor_svc(instructor_repo, scoped_test_session) -> CourseService:
+    return InstructorService(session=scoped_test_session, repo=instructor_repo)
+
+
+@pytest.fixture
+def client(course_svc,instructor_svc, scoped_test_session, monkeypatch) -> Generator[FlaskClient]:
+    """
+    Flask client where:
+      - the API module’s service is patched to our per-test service
+      - Flask-SQLAlchemy’s db.session is the same scoped_session
+    This keeps the app and tests on the same session/engine and lets
+    Flask teardown call db.session.remove() without conflicts.
+    """
     app = create_app()
-    course_api_module.svc = CourseService(session=None, repo=fake_courses)
-    with app.test_client() as c:
+    app.config.update(TESTING=True)
+
+    # Route API module to our test service
+    monkeypatch.setattr(course_api_module, "svc", course_svc, raising=True)
+    monkeypatch.setattr(instructor_api_module, "svc", instructor_svc, raising=True)
+
+    # Ensure anything in the app using db.session touches our scoped test session
+    monkeypatch.setattr(db, "session", scoped_test_session, raising=True)
+
+    with app.test_client() as c, app.app_context():
         yield c
 
 
-@pytest.fixture
-def fake_delivery_modes() -> FakeDeliveryModeRepository:
-    repo = FakeDeliveryModeRepository()
-    repo.seed(
-        DeliveryMode(label="Online", description="Remote"),
-        DeliveryMode(label="In-Person", description="On site"),
-        DeliveryMode(label="Hybrid", description="Mix"),
-    )
-    return repo
+# --- tiny seed helpers used by the tests ---
 
 
 @pytest.fixture
-def fake_event_types() -> FakeEventTypeRepository:
-    return FakeEventTypeRepository()
+def seed_delivery_modes(delivery_mode_repo, scoped_test_session):
+    online = delivery_mode_repo.create(label="Online", description="Remote")
+    inperson = delivery_mode_repo.create(label="In-Person", description="On site")
+    scoped_test_session.flush()
+    return {"online": online, "inperson": inperson}
 
 
 @pytest.fixture
-def fake_reg_statuses() -> FakeRegistrationStatusRepository:
-    repo = FakeRegistrationStatusRepository()
-    repo.seed(
-        RegistrationStatus(label="pending", description=None),
-        RegistrationStatus(label="confirmed", description=None),
-        RegistrationStatus(label="cancelled", description=None),
-    )
-    return repo
-
-
-@pytest.fixture
-def fake_courses() -> FakeCourseRepository:
-    return FakeCourseRepository()
-
-
-@pytest.fixture
-def fake_venues() -> DictFakeRepo[Venue]:
-    return DictFakeRepo()
-
-
-@pytest.fixture
-def fake_instructors() -> FakeInstructorRepository:
-    return FakeInstructorRepository()
-
-
-# --- Dummies ---
-
-
-class _DummyCtx:
-    def __enter__(self) -> Self:
-        return self
-
-    def __exit__(self, exc_type, exc, tb) -> bool:  # type: ignore[override]
-        return False
-
-
-class _TestSessionProtocol(Protocol):
-    """A lightweight protocol describing the minimal session-like API used
-    by service unit tests. Tests can annotate fixtures with this type to keep
-    linters/pyright happy without depending on SQLAlchemy types.
+def seed_two_courses(course_repo, scoped_test_session, seed_delivery_modes):
     """
-
-    def begin_nested(self) -> Any: ...
-
-    def begin(self) -> Any: ...
-
-    def delete(self, obj: Any) -> None: ...
-
-
-class _DummySession:
-    def begin_nested(self):
-        return _DummyCtx()
-
-    def begin(self):
-        return _DummyCtx()
-
-    def delete(self, _):
-        # no-op; fake repos are authoritative for tests
-        return None
-
-
-@pytest.fixture
-def dummy_session() -> _TestSessionProtocol:
-    """A tiny, test-only session-like object used by service unit tests.
-
-    Provides context manager methods used by services (`begin`, `begin_nested`) and a
-    `delete` no-op. Keeps service tests independent from SQLAlchemy sessions.
+    Seed two deterministic courses with datetime values for start/end dates.
+    This ensures the repository's date normalization works for datetime inputs too.
     """
-    return _DummySession()
-
-
-# --- Helpers ---
-
-
-@pytest.fixture
-def seed_two_courses(fake_courses: FakeCourseRepository) -> tuple[int, int]:
-    """Seed two deterministic courses and return their IDs in insertion order."""
-    c1 = Course(
+    c1 = course_repo.create_course(
         title="A",
         description=None,
-        delivery_mode_id=1,
+        delivery_mode_id=seed_delivery_modes["online"].id,
         venue_id=None,
-        start_date=date(2024, 1, 1),
-        end_date=date(2024, 1, 2),
+        instructor_ids=[],
+        start_date=datetime(2024, 1, 1),
+        end_date=datetime(2024, 1, 2),
     )
-    c2 = Course(
+
+    c2 = course_repo.create_course(
         title="B",
         description=None,
-        delivery_mode_id=1,
+        delivery_mode_id=seed_delivery_modes["online"].id,
         venue_id=None,
-        start_date=date(2024, 1, 3),
-        end_date=date(2024, 1, 3),
+        instructor_ids=[],
+        start_date=datetime(2024, 1, 3, 9, 0, 0),
+        end_date=datetime(2024, 1, 4, 17, 0, 0),
     )
-    fake_courses.seed(c1, c2)
-    # Use public API to derive ids deterministically
-    items = fake_courses.list_all()
-    ids = tuple(i.id for i in items)
-    return (ids[0], ids[1])
 
-
-@pytest.fixture
-def seeded_course_id(fake_courses: FakeCourseRepository) -> int:
-    c = Course(
-        title="X",
-        description=None,
-        delivery_mode_id=1,
-        venue_id=None,
-        start_date=date(2024, 1, 1),
-        end_date=date(2024, 1, 2),
-    )
-    fake_courses.seed(c)
-    # Return the id of the single seeded course
-    return fake_courses.list_all()[0].id
+    scoped_test_session.flush()
+    return (c1.id, c2.id)

@@ -109,7 +109,7 @@ class ICourseRepository(ABC):
         **kwargs: Any,
     ) -> Course | None:
         """Update an existing course.
-        
+
         Args:
             course_id: ID of course to update
             title: New title (optional)
@@ -120,9 +120,21 @@ class ICourseRepository(ABC):
             start_date: New start date (optional)
             end_date: New end date (optional)
             **kwargs: Additional fields to update
-            
+
         Returns:
             Updated course with relationships loaded, or None if not found
+        """
+
+    @abstractmethod
+    def delete_course(self, course_id: int) -> Course | None:
+        """
+        Delete an existing course.
+
+        Args:
+            course_id: ID of the course to delete.
+
+        Returns:
+            The deleted course, or None if not found.
         """
 
 class CourseRepository(BaseRepository[Course], ICourseRepository):
@@ -233,8 +245,8 @@ class CourseRepository(BaseRepository[Course], ICourseRepository):
 
         :raises ValueError: If one or more instructor IDs are not found.
         """
-        start_date_val = start_date.date() if start_date else None
-        end_date_val = end_date.date() if end_date else None
+        start_date_val = start_date if start_date else None
+        end_date_val = end_date if end_date else None
 
         course = Course(
             title=title,
@@ -245,7 +257,6 @@ class CourseRepository(BaseRepository[Course], ICourseRepository):
             end_date=end_date_val,
             **kwargs,
         )
-
         if instructor_ids:
             instructors = (
                 self.session.execute(select(Instructor).where(Instructor.id.in_(instructor_ids)))
@@ -257,8 +268,7 @@ class CourseRepository(BaseRepository[Course], ICourseRepository):
             course.instructors.extend(instructors)
 
         self.session.add(course)
-        self.session.flush()
-
+        self.session.commit()
         return course
 
     def update_course(
@@ -324,5 +334,14 @@ class CourseRepository(BaseRepository[Course], ICourseRepository):
                 raise ValueError("One or more instructor IDs were not found.")
             course.instructors = list(instructors)
 
-        self.session.flush()
+        self.session.commit()
+        return course
+    
+    def delete_course(self, course_id: int) -> Course | None:
+        course = self.get_course_by_id(course_id)
+        if course is None:
+            return None
+        
+        self.session.delete(course)
+        self.session.commit()
         return course

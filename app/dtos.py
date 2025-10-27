@@ -152,7 +152,6 @@ class CoursePastOut(BaseModel):
 # TODO: Add validation logic in DTO layer for creation
 class CourseCreateIn(BaseModel):
     """Input DTO for creating a course. Only fields accepted from client."""
-
     title: str
     description: str | None = None
     delivery_mode_id: int
@@ -178,7 +177,7 @@ class CourseUpdateIn(BaseModel):
     capacity: int | None = None
     session_counts: int | None = None
     session_duration_minutes: int | None = None
-
+    
 class DeliveryModeBaseDTO(BaseModel):
     label: str = Field(..., description="Delivery mode label")
     description: str | None = Field(None, description="Optional description")

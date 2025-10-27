@@ -10,13 +10,18 @@ from app.api.v1.swagger_docs import (
     LIST_PAST_COURSES_DOC,
     SEARCH_COURSES_DOC,
 )
-from app.dtos import CourseCreateIn, CourseListOut, CourseOut, CoursePastOut, CourseUpdateIn
+from app.dtos import (
+    CourseCreateIn,
+    CourseListOut,
+    CourseOut,
+    CoursePastOut,
+    CourseUpdateIn,
+)
 from app.exceptions import NotFoundError
 from app.services.course import CourseService
 
 course_bp = Blueprint("course", __name__)
 svc = CourseService()
-
 
 @course_bp.get("")
 @swag_from(LIST_COURSES_DOC)
@@ -69,10 +74,28 @@ def create_course():
         return jsonify({"error": str(e)}), 400
     except Exception:
         return jsonify({"error": "Internal server error"}), 500
-    
+
+
+@course_bp.delete("/<int:course_id>")
+# TODO: Add swagger doc for this
+def delete_course(course_id: int):
+    """Delete an existing course."""
+    try:
+        item = svc.delete_course(course_id)
+        course_record = CourseOut.model_validate(item).model_dump()
+        msg = {
+            "info": f"successflly deleted course {course_id}.",
+            "course_record": course_record,
+        }
+        return jsonify(msg), 200
+    except NotFoundError as e:
+        return jsonify({"error": str(e)}), 404
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
 
 @course_bp.put("/<int:course_id>")
-#TODO: Add swagger doc for this
+# TODO: Add swagger doc for this
 def update_course(course_id: int):
     """Update an existing course."""
     data = request.get_json()
@@ -82,7 +105,7 @@ def update_course(course_id: int):
         validated = CourseUpdateIn.model_validate(data)
         item = svc.update_course(course_id, validated)
         return jsonify(CourseOut.model_validate(item).model_dump()), 200
-    except NotFoundError:
-        return jsonify({"error": "Not found"}), 404
+    except NotFoundError as e:
+        return jsonify({"error": str(e)}), 404
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
