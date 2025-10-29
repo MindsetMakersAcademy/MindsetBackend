@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import (
     CheckConstraint,
     ForeignKey,
+    Index,
     UniqueConstraint,
     func,
 )
@@ -15,10 +16,8 @@ from app.db import Base, db
 
 TEHRAN_TZ = ZoneInfo("Asia/Tehran")
 
+
 class DeliveryMode(Base):
-    """
-    Lookup for course/event delivery modes.
-    """
     __tablename__ = "delivery_modes"
 
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
@@ -27,9 +26,6 @@ class DeliveryMode(Base):
 
 
 class RegistrationStatus(Base):
-    """
-    Lookup for registration statuses.
-    """
     __tablename__ = "registration_statuses"
 
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
@@ -164,9 +160,6 @@ class Instructor(Base):
 
 
 class Registration(Base):
-    """
-    Normalized: one row per (course, user). Status references lookup table.
-    """
     __tablename__ = "registrations"
 
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
@@ -200,6 +193,7 @@ class EventType(Base):
     """
     Lookup for event types (e.g., book_club, webinar, talk).
     """
+
     __tablename__ = "event_types"
 
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
@@ -218,6 +212,7 @@ class Event(Base):
     Lightweight occurrences like a book-club session, talk, or meetup.
     Uses DeliveryMode lookup too (consistent with Course).
     """
+
     __tablename__ = "events"
 
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
@@ -256,4 +251,61 @@ class Event(Base):
             "(starts_at IS NULL OR ends_at IS NULL) OR (ends_at > starts_at)",
             name="ck_event_timespan",
         ),
+    )
+
+
+class Admin(Base):
+    """Admin"""
+
+    __tablename__ = "admin"
+
+    id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
+    email: Mapped[str] = mapped_column(db.String(160), nullable=False, unique=True, index=True)
+    full_name: Mapped[str] = mapped_column(db.String(160), nullable=False, index=True)
+    password_hash: Mapped[str] = mapped_column(db.String(256), nullable=False)
+    is_active: Mapped[bool] = mapped_column(db.Boolean, nullable=False, server_default=db.text("1"))
+    created_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+    posts: Mapped[list[BlogPost]] = relationship(back_populates="author", lazy="selectin")
+
+    __table_args__ = (
+        CheckConstraint("email <> ''", name="ck_admin_email_not_empty"),
+        CheckConstraint("full_name <> ''", name="ck_admin_full_name_not_empty"),
+    )
+
+
+class BlogPost(Base):
+    __tablename__ = "blog_posts"
+    
+    id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
+    slug: Mapped[str] = mapped_column(db.String(160), nullable=False, unique=True, index=True)
+    title: Mapped[str] = mapped_column(db.String(160), nullable=False, index=True)
+    summary: Mapped[str | None] = mapped_column(db.String(300), nullable=True)
+    content: Mapped[str] = mapped_column(db.Text, nullable=False)
+
+    status: Mapped[str] = mapped_column(db.String(20), nullable=False, server_default="draft")
+    published_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
+
+    author_id: Mapped[int] = mapped_column(
+        ForeignKey("admin.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    author: Mapped[Admin] = relationship(back_populates="posts", lazy="joined")
+
+    created_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+    __table_args__ = (
+        UniqueConstraint("slug", name="uq_blog_slug"),
+        Index("ix_blog_status_published_at", "status", "published_at"),
+        CheckConstraint("title <> ''", name="ck_blog_title_not_empty"),
+        CheckConstraint("content <> ''", name="ck_blog_content_not_empty"),
     )
