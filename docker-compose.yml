@@ -5,7 +5,10 @@ services:
       - "${PORT:-8000}:8000"
     env_file: 
       - .env
-    environment:
-      FLASK_ENV: ${FLASK_ENV}
-      DATABASE_URL: ${DATABASE_URL}
     restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+
+
+volumes:
+  app_data: {}

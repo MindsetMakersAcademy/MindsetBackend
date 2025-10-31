@@ -6,6 +6,7 @@ from werkzeug.security import generate_password_hash
 
 from app.dtos import AdminCreate, AdminOut, AdminUpdate
 from app.exceptions import ConflictError, NotFoundError
+from app.models import Admin
 from app.repositories import AdminRepository, IAdminRepository
 
 
@@ -24,6 +25,12 @@ class AdminService:
         if not row:
             raise NotFoundError("Admin not found")
         return AdminOut.model_validate(row)
+
+    def get_admin_by_email(self, email: str) -> Admin | None:
+        row = self.repo.get_admin_by_email(email)
+        if not row:
+            return None
+        return row
 
     def create_admin(self, payload: AdminCreate) -> AdminOut:
         if self.repo.get_admin_by_email(payload.email):

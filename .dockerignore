@@ -1,5 +1,14 @@
-.git
-.venv
 __pycache__/
 *.pyc
-tests/
+*.pyo
+*.pyd
+*.log
+.env
+.venv/
+.envrc
+.git/
+.gitignore
+.idea/
+.vscode/
+__pycache__/
+db/

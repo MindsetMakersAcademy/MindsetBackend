@@ -34,6 +34,8 @@ class RegistrationStatus(Base):
 
 
 class User(Base):
+    """The course attendants."""
+
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
@@ -281,7 +283,7 @@ class Admin(Base):
 
 class BlogPost(Base):
     __tablename__ = "blog_posts"
-    
+
     id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
     slug: Mapped[str] = mapped_column(db.String(160), nullable=False, unique=True, index=True)
     title: Mapped[str] = mapped_column(db.String(160), nullable=False, index=True)

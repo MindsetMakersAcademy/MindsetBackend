@@ -6,14 +6,13 @@ from flask import Flask
 from app.api.v1 import admin_bp, blog_bp, course_bp
 from app.api.v1.swagger_docs import SWAGGER_TEMPLATE
 from app.cli import register_cli
-from app.config import Config
 from app.db import db, migrate
+from app.settings import SETTINGS
 
 
-def create_app(config: type[Config] | None = None) -> Flask:
+def create_app() -> Flask:
     app = Flask(__name__)
-    cfg = (config or Config)()
-    app.config.from_mapping(cfg.to_flask_mapping())
+    app.config.from_mapping(SETTINGS.to_flask_mapping())
 
     db.init_app(app)
     migrate.init_app(app, db)

@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+from typing import Any
+
 from flask import Blueprint, jsonify, request
 from pydantic import ValidationError
+from werkzeug.security import check_password_hash
 
-from app.dtos import AdminCreate, AdminUpdate
+from app.auth.jwt import admin_required_jwt, encode_jwt
+from app.dtos import AdminCreate, AdminLoginIn, AdminLoginOut, AdminUpdate
 from app.exceptions import ConflictError, NotFoundError
 from app.services.admin import AdminService
 
@@ -11,8 +15,47 @@ admin_bp = Blueprint("admin", __name__)
 svc = AdminService()
 
 
+# JWT-based login endpoint
+@admin_bp.post("/login")
+def login() -> tuple[Any, ...]:
+    """
+    Admin login (returns JWT)
+    ---
+    tags: [admins]
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              email: {type: string}
+              password: {type: string}
+            required: [email, password]
+    responses:
+      200: {description: JWT token}
+      401: {description: Invalid credentials}
+      422: {description: Validation error}
+    """
+    try:
+        # TODO : Make these cleaner
+        payload = AdminLoginIn.model_validate_json(request.data or b"{}")
+        admin = svc.get_admin_by_email(email=payload.email)
+        if not admin or not check_password_hash(
+            pwhash=admin.password_hash, password=payload.password
+        ):
+            return jsonify({"error": "Invalid credentials"}), 401
+        token = encode_jwt(admin=admin)
+        resp = AdminLoginOut(access_token=token)
+        return jsonify(resp.model_dump()), 200
+
+    except ValidationError as ve:
+        return jsonify({"error": "validation_error", "details": ve.errors()}), 422
+
+
 @admin_bp.get("/")
-def list_admins():
+@admin_required_jwt
+def list_admins() -> tuple[Any, ...]:
     """
     List admins
     ---
@@ -26,7 +69,8 @@ def list_admins():
 
 
 @admin_bp.get("/<int:admin_id>")
-def get_admin(admin_id: int):
+@admin_required_jwt
+def get_admin(admin_id: int) -> tuple[Any, ...]:
     """
     Get admin by id
     ---
@@ -48,7 +92,8 @@ def get_admin(admin_id: int):
 
 
 @admin_bp.post("/")
-def create_admin():
+@admin_required_jwt
+def create_admin() -> tuple[Any, ...]:
     """
     Create admin
     ---
@@ -80,7 +125,8 @@ def create_admin():
 
 
 @admin_bp.patch("/<int:admin_id>")
-def update_admin(admin_id: int):
+@admin_required_jwt
+def update_admin(admin_id: int) -> tuple[Any, ...]:
     """
     Update admin
     ---
@@ -106,7 +152,8 @@ def update_admin(admin_id: int):
 
 
 @admin_bp.delete("/<int:admin_id>")
-def delete_admin(admin_id: int):
+@admin_required_jwt
+def delete_admin(admin_id: int) -> tuple[Any, ...]:
     """
     Delete admin
     ---

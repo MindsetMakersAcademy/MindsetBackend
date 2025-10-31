@@ -327,6 +327,25 @@ class PostCreate(BaseModel):
         return v
 
 
+class AdminLoginIn(BaseModel):
+    """DTO for admin login request."""
+    email: str = Field(..., min_length=3, max_length=160)
+    password: str = Field(..., min_length=8, max_length=128)
+
+
+class AdminLoginOut(BaseModel):
+    """DTO for admin login response."""
+    access_token: str
+
+
+class AdminAuthPayload(BaseModel):
+    """DTO for JWT payload (decoded)."""
+    user_id: int
+    email: str
+    is_admin: bool
+    exp: int
+
+
 class PostUpdate(BaseModel):
     slug: str | None = Field(None, min_length=1, max_length=160)
     title: str | None = Field(None, min_length=1, max_length=160)
