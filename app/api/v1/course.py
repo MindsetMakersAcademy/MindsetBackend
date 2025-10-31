@@ -19,6 +19,7 @@ from app.dtos import (
 )
 from app.exceptions import NotFoundError
 from app.services.course import CourseService
+from app.auth.jwt import admin_required_jwt
 
 course_bp = Blueprint("course", __name__)
 svc = CourseService()
@@ -62,6 +63,7 @@ def search_courses():
 
 @course_bp.post("")
 @swag_from(CREATE_COURSE_DOC)
+@admin_required_jwt
 def create_course():
     """Create a new course."""
     data = request.get_json()
@@ -77,8 +79,9 @@ def create_course():
         return jsonify({"error": "Internal server error"}), 500
 
 
-@course_bp.delete("/<int:course_id>")
 # TODO: Add swagger doc for this
+@course_bp.delete("/<int:course_id>")
+@admin_required_jwt
 def delete_course(course_id: int):
     """Delete an existing course."""
     try:
@@ -95,8 +98,9 @@ def delete_course(course_id: int):
         return jsonify({"error": str(e)}), 400
 
 
-@course_bp.put("/<int:course_id>")
 # TODO: Add swagger doc for this
+@course_bp.put("/<int:course_id>")
+@admin_required_jwt
 def update_course(course_id: int):
     """Update an existing course."""
     data = request.get_json()

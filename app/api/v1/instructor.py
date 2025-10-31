@@ -5,6 +5,7 @@ from typing import Literal, cast
 from flasgger import swag_from  # type: ignore
 from flask import Blueprint, jsonify, request
 
+from app.auth.jwt import admin_required_jwt
 from app.dtos import InstructorCreateDTO, InstructorUpdateDTO
 from app.exceptions import AlreadyExistsError, NotFoundError, ValidationError
 from app.services.instructor import InstructorService
@@ -37,6 +38,7 @@ def list_instructors():
 
 @instructor_bp.get("/<int:instructor_id>")
 @swag_from(GET_INSTRUCTOR_DOC)
+@admin_required_jwt
 def get_instructor(instructor_id: int):
     """Get a specific instructor by ID."""
     try:
@@ -48,6 +50,7 @@ def get_instructor(instructor_id: int):
 
 @instructor_bp.post("")
 @swag_from(CREATE_INSTRUCTOR_DOC)
+@admin_required_jwt
 def create_instructor():
     """Create a new instructor."""
     data = request.get_json()
@@ -66,6 +69,7 @@ def create_instructor():
 
 @instructor_bp.put("/<int:instructor_id>")
 @swag_from(UPDATE_INSTRUCTOR_DOC)
+@admin_required_jwt
 def update_instructor(instructor_id: int):
     """Update an existing instructor."""
     data = request.get_json()
@@ -84,6 +88,7 @@ def update_instructor(instructor_id: int):
 
 @instructor_bp.delete("/<int:instructor_id>")
 @swag_from(DELETE_INSTRUCTOR_DOC)
+@admin_required_jwt
 def delete_instructor(instructor_id: int):
     """Delete an instructor."""
     try:

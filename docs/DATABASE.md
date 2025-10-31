@@ -1,3 +1,44 @@
+# BlogPost
+Represents blog posts authored by admins.
+
+| Column        | Type         | Constraints                | Description                  |
+|--------------|--------------|----------------------------|------------------------------|
+| id           | Integer      | Primary Key                | Unique identifier            |
+| slug         | String(160)  | Not Null, Unique, Indexed  | URL slug for the post        |
+| title        | String(160)  | Not Null, Indexed          | Post title                   |
+| summary      | String(300)  | Nullable                   | Short summary                |
+| content      | Text         | Not Null                   | Full post content            |
+| status       | String(20)   | Not Null, Default: draft   | Post status (draft/published)|
+| published_at | DateTime     | Nullable                   | Publish timestamp            |
+| author_id    | Integer      | Foreign Key, Not Null      | Reference to Admin           |
+| created_at   | DateTime     | Not Null, Default: now()   | Record creation timestamp    |
+| updated_at   | DateTime     | Not Null, Default: now()   | Last update timestamp        |
+
+**Relationships:**
+- Many-to-One with Admin (author)
+
+# Admin
+Represents admin users who manage the system and author blog posts.
+
+| Column      | Type         | Constraints                | Description                  |
+|-------------|--------------|----------------------------|------------------------------|
+| id          | Integer      | Primary Key                | Unique identifier            |
+| email       | String(160)  | Not Null, Unique, Indexed  | Admin email                  |
+| full_name   | String(160)  | Not Null, Indexed          | Admin full name              |
+| password_hash | String(256)| Not Null                   | Hashed password              |
+| is_active   | Boolean      | Not Null, Default: true    | Active status                |
+| created_at  | DateTime     | Not Null, Default: now()   | Record creation timestamp    |
+| updated_at  | DateTime     | Not Null, Default: now()   | Last update timestamp        |
+
+**Relationships:**
+- One-to-Many with BlogPost (posts)
+
+# API Endpoints (Blog)
+
+- `GET /api/v1/blogs/<int:post_id>`: Get blog post by ID
+- `GET /api/v1/blogs/slug/<string:slug>`: Get blog post by slug
+- `GET /api/v1/blogs/published`: List published blog posts
+- `GET /api/v1/blogs/`: List all blog posts
 # Database Entity Relationship Diagram
 
 ## Overview

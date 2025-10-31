@@ -3,6 +3,7 @@ from __future__ import annotations
 from flask import Blueprint, jsonify, request
 from pydantic import ValidationError
 
+from app.auth.jwt import admin_required_jwt
 from app.dtos import PostCreate, PostUpdate
 from app.exceptions import ConflictError, NotFoundError
 from app.services.blog import BlogService
@@ -24,7 +25,27 @@ def list_published():
     items = [p.model_dump() for p in svc.list_published()]
     return jsonify(items), 200
 
-
+@blog_bp.get("/<int:post_id>")
+def get_by_id(post_id: int):
+    """
+    Get blog post by ID
+    ---
+    tags: [blog]
+    parameters:
+      - in: path
+        name: post_id
+        schema: {type: integer}
+        required: true
+    responses:
+      200: {description: OK}
+      404: {description: Not found}
+    """
+    try:
+        item = svc.get_by_id(post_id)
+        return jsonify(item.model_dump()), 200
+    except NotFoundError:
+        return jsonify({"error": "Not found"}), 404
+      
 @blog_bp.get("/slug/<string:slug>")
 def get_by_slug(slug: str):
     """
@@ -79,8 +100,8 @@ def search_posts():
     items = [p.model_dump() for p in svc.search(q)] if q else []
     return jsonify(items), 200
 
-
 @blog_bp.post("/")
+@admin_required_jwt
 def create_post():
     """
     Create post
@@ -108,6 +129,7 @@ def create_post():
 
 
 @blog_bp.patch("/<int:post_id>")
+@admin_required_jwt
 def update_post(post_id: int):
     """
     Update post
@@ -134,6 +156,7 @@ def update_post(post_id: int):
 
 
 @blog_bp.delete("/<int:post_id>")
+@admin_required_jwt
 def delete_post(post_id: int):
     """
     Delete post

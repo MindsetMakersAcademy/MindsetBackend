@@ -1,10 +1,11 @@
 # MindsetBackend
 This repository contains the backend part of the Mindset website.
-A Flask-based REST API for managing course data, built with SQLAlchemy 2.0 and Pydantic v2.
+A Flask-based REST API for managing courses, blogs, instructors, and admin users. Built with Flask, SQLAlchemy 2.x, and Pydantic v2.
 
 ## Documentation
 
 - **[Database Schema & ERD](docs/DATABASE.md)** - Complete database entity relationship diagram, table definitions, and relationships
+- **Postman Collection:** See the `postman/` folder for a ready-to-use Postman collection covering all API endpoints (admins, blogs, courses, instructors). Import into Postman for easy testing.
 
 ## Codebase Structure
 
@@ -14,29 +15,30 @@ The project follows a clean, modular architecture:
 app/
 ├── api/                    # HTTP layer
 │   └── v1/
-│       ├── courses.py     # Route handlers
-│       └── courses_docs.py# Swagger documentation
-├── models.py              # SQLAlchemy models
-├── dtos.py               # Pydantic request/response models
-├── services/             # Business logic layer
-│   └── courses.py        # Course-related operations
-├── repositories/         # Data access layer
-│   └── courses.py        # Database operations
-├── config.py            # Application configuration
-└── db.py               # Database connection setup
+│       ├── admin.py        # Admin endpoints
+│       ├── blog.py         # Blog endpoints
+│       ├── course.py       # Course endpoints
+│       ├── instructor.py   # Instructor endpoints
+│       └── swagger_docs.py # Swagger documentation
+├── models.py               # SQLAlchemy models
+├── dtos.py                 # Pydantic request/response models
+├── services/               # Business logic layer
+├── repositories/           # Data access layer
+├── config.py               # Application configuration
+├── db.py                   # Database connection setup
 ```
 
 Key components:
 
 1. **API Layer** (`app/api/`)
-   - Routes and request handling
+   - Route handlers for all entities (admin, blog, course, instructor)
    - Input validation via Pydantic DTOs
    - Swagger documentation
 
 2. **Service Layer** (`app/services/`)
    - Business logic implementation
    - Coordinates between API and repositories
-   - Handles data transformations
+   - Handles data transformations and error handling
 
 3. **Repository Layer** (`app/repositories/`)
    - Database operations
@@ -46,7 +48,7 @@ Key components:
 4. **Models** (`app/models.py`)
    - SQLAlchemy model definitions
    - Database schema representation
-   - Type-safe with SQLAlchemy 2.0 annotations
+   - Type-safe with SQLAlchemy 2.x annotations
    - See [DATABASE.md](docs/DATABASE.md) for complete entity relationships and schema details
 
 5. **DTOs** (`app/dtos.py`)
@@ -54,11 +56,43 @@ Key components:
    - Input validation schemas
    - API contract definitions
 
-
 ## Tech Stack
 
 - Python 3.13
-- Flask + SQLAlchemy 2.0
+- Flask + SQLAlchemy 2.x
+- Pydantic v2
+- Alembic (migrations)
+- passlib[argon2] (password hashing)
+- rich-click (CLI)
+
+## API Endpoints
+
+All endpoints are versioned under `/api/v1/`.
+
+- **Admin:** `/api/v1/admins/`
+- **Blog:** `/api/v1/blogs/`
+- **Course:** `/api/v1/courses/`
+- **Instructor:** `/api/v1/instructors/`
+
+See the Postman collection for example requests and authentication flows.
+
+## Testing & Development
+
+- Use the Postman collection in `postman/` for API testing.
+- Run migrations with `flask db upgrade`.
+- Create a superuser with CLI or via environment variables.
+- All config/secrets are loaded from `.env` using Pydantic settings.
+
+## How to Run
+
+1. Install dependencies: `uv sync --frozen --no-dev`
+2. Run migrations: `flask db upgrade`
+3. Start the server: `uv run flask --app app:create_app run --host=0.0.0.0 --port=8000`
+4. Use Postman for API testing (see `postman/`)
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 - Pydantic v2 for DTOs
 - Flasgger for API documentation
 - UV package manager (recommended)
