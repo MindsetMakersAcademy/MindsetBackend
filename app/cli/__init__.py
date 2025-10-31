@@ -20,6 +20,7 @@ from __future__ import annotations
 import rich_click as click
 from flask import Flask
 
+from .admin import AdminCLI, admin_group
 from .common import CONTEXT_SETTINGS, attach_commands_from_class
 from .db import DatabaseCLI, db_group
 from .delivery_mode import DeliveryModeCLI, delivery_mode_group
@@ -43,9 +44,9 @@ def top_cli() -> None:
       • `flask cli <group> <command> --help` for details
     """
 
-
 def register_cli(app: Flask) -> None:
-    """Register all CLI groups and commands on the Flask app.
+    """
+    Register all CLI groups and commands on the Flask app.
 
     After registration, you'll have:
 
@@ -55,6 +56,7 @@ def register_cli(app: Flask) -> None:
       • `flask cli event-type --help`
       • `flask cli venue --help`
       • `flask cli db --help`
+      • `flask cli admin --help`
 
     This function is intended to be called from your app factory.
     """
@@ -64,9 +66,9 @@ def register_cli(app: Flask) -> None:
         (event_type_group, EventTypeCLI),
         (venue_group, VenueCLI),
         (db_group, DatabaseCLI),
+        (admin_group, AdminCLI),
     ]
     for group, cls in pairs:
         attach_commands_from_class(group, cls)
         top_cli.add_command(group)
-
     app.cli.add_command(top_cli)

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -8,9 +8,10 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 class PaginationQueryDTO(BaseModel):
     """DTO for pagination query parameters."""
+
     page: int = Field(default=1, ge=1, description="Page number (1-indexed)")
     page_size: int = Field(default=20, ge=1, le=100, description="Items per page")
-    
+
     @property
     def offset(self) -> int:
         """Calculate offset for database query."""
@@ -19,48 +20,60 @@ class PaginationQueryDTO(BaseModel):
 
 class SortQueryDTO(BaseModel):
     """DTO for sorting query parameters."""
+
     sort: str = Field(default="id", description="Field to sort by")
     direction: Literal["asc", "desc"] = Field(default="asc", description="Sort direction")
 
 
 class SearchQueryDTO(BaseModel):
     """DTO for search query parameters."""
+
     q: str | None = Field(default=None, min_length=1, max_length=100, description="Search query")
-    
+
     @field_validator("q")
     @classmethod
     def strip_whitespace(cls, v: str | None) -> str | None:
         """Strip whitespace from query string."""
         return v.strip() if v else None
 
+
 class RegistrationStatusBaseDTO(BaseModel):
     """Shared fields for RegistrationStatus."""
+
     label: str = Field(..., description="Registration status label")
     description: str | None = Field(None, description="Optional description")
+
 
 class RegistrationStatusCreateDTO(RegistrationStatusBaseDTO):
     """Used for creating a new RegistrationStatus entry."""
 
+
 class RegistrationStatusUpdateDTO(BaseModel):
     """Used for updating a RegistrationStatus entry."""
+
     label: str | None = Field(None, description="New label")
     description: str | None = Field(None, description="New description")
 
+
 class RegistrationStatusReadDTO(RegistrationStatusBaseDTO):
     """Returned when fetching RegistrationStatus entries."""
+
     id: int
     model_config = ConfigDict(from_attributes=True)
 
+
 class DeliveryModeOut(BaseModel):
     """Output DTO for DeliveryMode entity."""
+
     id: int
     label: str
     description: str | None = None
-    model_config = ConfigDict(from_attributes=True) 
+    model_config = ConfigDict(from_attributes=True)
 
 
 class VenueOut(BaseModel):
     """Output DTO for Venue entity."""
+
     id: int
     name: str
     address: str | None = None
@@ -79,8 +92,10 @@ class InstructorOut(BaseModel):
     bio: str | None = None
     model_config = ConfigDict(from_attributes=True)
 
+
 class InstructorCreateDTO(BaseModel):
     """DTO for creating an instructor."""
+
     full_name: str = Field(..., min_length=1, max_length=120)
     email: str | None = Field(None, max_length=160)
     phone: str | None = Field(None, max_length=40)
@@ -89,6 +104,7 @@ class InstructorCreateDTO(BaseModel):
 
 class InstructorUpdateDTO(BaseModel):
     """DTO for updating an instructor."""
+
     full_name: str | None = Field(None, min_length=1, max_length=120)
     email: str | None = Field(None, max_length=160)
     phone: str | None = Field(None, max_length=40)
@@ -97,12 +113,14 @@ class InstructorUpdateDTO(BaseModel):
 
 class InstructorReadDTO(BaseModel):
     """DTO for reading instructor data."""
+
     id: int
     full_name: str
     email: str | None = None
     phone: str | None = None
     bio: str | None = None
     model_config = ConfigDict(from_attributes=True)
+
 
 class CourseOut(BaseModel):
     """Output DTO for full Course details, including relationships."""
@@ -152,6 +170,7 @@ class CoursePastOut(BaseModel):
 # TODO: Add validation logic in DTO layer for creation
 class CourseCreateIn(BaseModel):
     """Input DTO for creating a course. Only fields accepted from client."""
+
     title: str
     description: str | None = None
     delivery_mode_id: int
@@ -177,36 +196,43 @@ class CourseUpdateIn(BaseModel):
     capacity: int | None = None
     session_counts: int | None = None
     session_duration_minutes: int | None = None
-    
+
+
 class DeliveryModeBaseDTO(BaseModel):
     label: str = Field(..., description="Delivery mode label")
     description: str | None = Field(None, description="Optional description")
 
-class DeliveryModeCreateDTO(DeliveryModeBaseDTO):
-    ...
+
+class DeliveryModeCreateDTO(DeliveryModeBaseDTO): ...
+
 
 class DeliveryModeUpdateDTO(BaseModel):
     label: str | None = Field(None)
     description: str | None = Field(None)
 
+
 class DeliveryModeReadDTO(DeliveryModeBaseDTO):
     id: int
     model_config = ConfigDict(from_attributes=True)
+
 
 class EventTypeBaseDTO(BaseModel):
     label: str = Field(..., description="Event type label")
     description: str | None = Field(None, description="Optional description")
 
-class EventTypeCreateDTO(EventTypeBaseDTO):
-    ...
+
+class EventTypeCreateDTO(EventTypeBaseDTO): ...
+
 
 class EventTypeUpdateDTO(BaseModel):
     label: str | None = Field(None)
     description: str | None = Field(None)
 
+
 class EventTypeReadDTO(EventTypeBaseDTO):
     id: int
     model_config = ConfigDict(from_attributes=True)
+
 
 class VenueCreateDTO(BaseModel):
     name: str
@@ -215,12 +241,14 @@ class VenueCreateDTO(BaseModel):
     notes: str | None = None
     room_capacity: int | None = None
 
+
 class VenueUpdateDTO(BaseModel):
     name: str | None = None
     address: str | None = None
     map_url: str | None = None
     notes: str | None = None
     room_capacity: int | None = None
+
 
 class VenueReadDTO(BaseModel):
     id: int
@@ -230,3 +258,101 @@ class VenueReadDTO(BaseModel):
     notes: str | None = None
     room_capacity: int | None = None
     model_config = ConfigDict(from_attributes=True)
+
+
+class AdminOut(BaseModel):
+    id: int
+    email: str
+    full_name: str
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AdminCreate(BaseModel):
+    email: str = Field(..., min_length=3, max_length=160)
+    full_name: str = Field(..., min_length=1, max_length=160)
+    password: str = Field(..., min_length=8, max_length=128)
+
+
+class AdminUpdate(BaseModel):
+    email: str = Field(..., min_length=3, max_length=160)
+    full_name: str | None = Field(None, min_length=1, max_length=160)
+    password: str | None = Field(None, min_length=8, max_length=128)
+    is_active: bool | None = None
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class AuthorMini(BaseModel):
+    id: int
+    full_name: str
+    email: str
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PostOut(BaseModel):
+    id: int
+    slug: str
+    title: str
+    summary: str | None = None
+    content: str
+    status: str
+    published_at: datetime | None = None
+    author: AuthorMini
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PostCreate(BaseModel):
+    slug: str = Field(..., min_length=1, max_length=160)
+    title: str = Field(..., min_length=1, max_length=160)
+    summary: str | None = Field(None, max_length=300)
+    content: str = Field(..., min_length=1)
+    status: Literal["draft", "published", "archived"] = Field(default="draft")
+    published_at: datetime | None = None
+    author_id: int
+
+    @field_validator("status")
+    @classmethod
+    def _status_ok(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        if v not in {"draft", "published", "archived"}:
+            raise ValueError("status must be one of: draft|published|archived")
+        return v
+
+
+class AdminLoginIn(BaseModel):
+    """DTO for admin login request."""
+    email: str = Field(..., min_length=3, max_length=160)
+    password: str = Field(..., min_length=8, max_length=128)
+
+
+class AdminLoginOut(BaseModel):
+    """DTO for admin login response."""
+    access_token: str
+
+
+class AdminAuthPayload(BaseModel):
+    """DTO for JWT payload (decoded)."""
+    user_id: int
+    email: str
+    is_admin: bool
+    exp: int
+
+
+class PostUpdate(BaseModel):
+    slug: str | None = Field(None, min_length=1, max_length=160)
+    title: str | None = Field(None, min_length=1, max_length=160)
+    summary: str | None = Field(None, max_length=300)
+    content: str | None = None
+    status: str | None = None
+    published_at: datetime | None = None
+    author_id: int | None = None
+
+    model_config = ConfigDict(extra="forbid")

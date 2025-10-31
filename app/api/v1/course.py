@@ -23,6 +23,7 @@ from app.services.course import CourseService
 course_bp = Blueprint("course", __name__)
 svc = CourseService()
 
+
 @course_bp.get("")
 @swag_from(LIST_COURSES_DOC)
 def list_courses():

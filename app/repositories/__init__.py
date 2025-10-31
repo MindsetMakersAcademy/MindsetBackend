@@ -1,4 +1,6 @@
+from .admin import *  # noqa: F403
 from .base import *  # noqa: F403
+from .blog import *  # noqa: F403
 from .course import *  # noqa: F403
 from .delivery_mode import *  # noqa: F403
 from .event_type import *  # noqa: F403
