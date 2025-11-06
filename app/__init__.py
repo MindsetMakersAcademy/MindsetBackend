@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from flasgger import Swagger
 from flask import Flask
+from flask_cors import CORS
 
 from app.api.v1 import admin_bp, blog_bp, course_bp
 from app.api.v1.swagger_docs import SWAGGER_TEMPLATE
@@ -13,7 +14,7 @@ from app.settings import SETTINGS
 def create_app() -> Flask:
     app = Flask(__name__)
     app.config.from_mapping(SETTINGS.to_flask_mapping())
-
+    CORS(app, origins=SETTINGS.FRONTEND_URLS)
     db.init_app(app)
     migrate.init_app(app, db)
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -14,10 +14,23 @@ class Settings(BaseSettings):
     JWT_ACCESS_TOKEN_EXPIRES: int = Field(
         default=60, description=" short lifespan for access tokens in minute."
     )
-    
+    FRONTEND_URLS: list[str] = Field(
+        default_factory=lambda: ["http://localhost:5173"],
+        description="List of allowed frontend URLs for CORS"
+    )
     SUPERUSER_EMAIL: str = Field(default="admin@example.com", description="Superuser email")
     SUPERUSER_PASSWORD: str = Field(default="adminpass", description="Superuser password")
     SUPERUSER_NAME: str = Field(default="Superuser", description="Superuser name")
+    
+    
+    @field_validator("FRONTEND_URLS", mode="before")
+    @classmethod
+    def split_urls(cls, v:str | list[str]) -> list[str]:
+        if isinstance(v,str):
+            return [url.strip() for url in v.split(",") if url.strip()]
+        else:
+            return v
+
     
     def to_flask_mapping(self)  -> dict[str, object]:
         return {
