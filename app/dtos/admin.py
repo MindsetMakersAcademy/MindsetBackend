@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Literal
+from datetime import UTC, datetime
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AdminOut(BaseModel):
@@ -21,6 +20,7 @@ class AdminCreate(BaseModel):
     email: str = Field(..., min_length=3, max_length=160)
     full_name: str = Field(..., min_length=1, max_length=160)
     password: str = Field(..., min_length=8, max_length=128)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class AdminUpdate(BaseModel):
@@ -28,6 +28,7 @@ class AdminUpdate(BaseModel):
     full_name: str | None = Field(None, min_length=1, max_length=160)
     password: str | None = Field(None, min_length=8, max_length=128)
     is_active: bool | None = None
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     model_config = ConfigDict(extra="forbid")
 
@@ -37,25 +38,6 @@ class AuthorMini(BaseModel):
     full_name: str
     email: str
     model_config = ConfigDict(from_attributes=True)
-
-
-class PostCreate(BaseModel):
-    slug: str = Field(..., min_length=1, max_length=160)
-    title: str = Field(..., min_length=1, max_length=160)
-    summary: str | None = Field(None, max_length=300)
-    content: str = Field(..., min_length=1)
-    status: Literal["draft", "published", "archived"] = Field(default="draft")
-    published_at: datetime | None = None
-    author_id: int
-
-    @field_validator("status")
-    @classmethod
-    def _status_ok(cls, v: str | None) -> str | None:
-        if v is None:
-            return v
-        if v not in {"draft", "published", "archived"}:
-            raise ValueError("status must be one of: draft|published|archived")
-        return v
 
 
 class AdminLoginIn(BaseModel):

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
-
 from app.dtos.blog import PostCreate, PostOut, PostUpdate
 from app.exceptions import ConflictError, NotFoundError
 from app.repositories.blog import BlogRepository, IBlogRepository
@@ -13,11 +11,11 @@ class BlogService:
     def __init__(self, repo: IBlogRepository | None = None) -> None:
         self.repo = repo or BlogRepository()
 
-    def list_published(self, *, limit: int = 100, offset: int = 0) -> Sequence[PostOut]:
+    def list_published(self, offset: int = 0, limit: int = 20) -> list[PostOut]:
         rows = self.repo.list_published(limit=limit, offset=offset)
         return [PostOut.model_validate(r) for r in rows]
 
-    def list_all(self, *, limit: int = 100, offset: int = 0) -> Sequence[PostOut]:
+    def list_all(self, offset: int = 0, limit: int = 20) -> list[PostOut]:
         rows = self.repo.list_posts(limit=limit, offset=offset)
         return [PostOut.model_validate(r) for r in rows]
 
@@ -33,7 +31,7 @@ class BlogService:
             raise NotFoundError("Post not found")
         return PostOut.model_validate(row)
 
-    def search(self, q: str, *, limit: int = 100, offset: int = 0) -> Sequence[PostOut]:
+    def search(self, q: str, *, limit: int = 100, offset: int = 0) -> list[PostOut]:
         rows = self.repo.search_posts(q, limit=limit, offset=offset)
         return [PostOut.model_validate(r) for r in rows]
 
@@ -60,7 +58,6 @@ class BlogService:
             content=payload.content,
             summary=payload.summary,
             status=payload.status,
-            published_at=payload.published_at,
             author_id=payload.author_id,
         )
         if not row:

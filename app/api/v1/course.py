@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from flasgger import swag_from  # type: ignore
 from flask import Blueprint, jsonify, request
+from pydantic import ValidationError
 
 from app.api.v1.swagger_docs import (
     CREATE_COURSE_DOC,
@@ -11,6 +12,7 @@ from app.api.v1.swagger_docs import (
     SEARCH_COURSES_DOC,
 )
 from app.auth.jwt import admin_required_jwt
+from app.dtos.common import PaginationQueryDTO
 from app.dtos.course import (
     CourseCreateIn,
     CourseListOut,
@@ -25,12 +27,24 @@ course_bp = Blueprint("course", __name__)
 svc = CourseService()
 
 
-@course_bp.get("")
+@course_bp.get("/")
 @swag_from(LIST_COURSES_DOC)
 def list_courses():
     """List all courses."""
-    items = svc.list_courses()
-    return jsonify({"courses": [CourseListOut.model_validate(i).model_dump() for i in items]}), 200
+    try:
+        data = request.args.to_dict()
+        validated = PaginationQueryDTO.model_validate(data)
+        items = svc.list_courses(offset=validated.offset, limit=validated.limit)
+    except ValidationError as ve:
+        return jsonify({"error": "validation_error", "details": ve.errors()}), 422
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500
+    return (
+        jsonify({"courses": [CourseListOut.model_validate(i).model_dump() for i in items]}),
+        200,
+    )
 
 
 @course_bp.get("/<int:course_id>")
@@ -42,26 +56,36 @@ def get_course(course_id: int):
         return jsonify(CourseOut.model_validate(item).model_dump()), 200
     except NotFoundError:
         return jsonify({"error": "Not found"}), 404
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @course_bp.get("/past")
 @swag_from(LIST_PAST_COURSES_DOC)
 def list_past():
     """List all past courses."""
-    items = svc.list_past_courses()
-    return jsonify({"courses": [CoursePastOut.model_validate(i).model_dump() for i in items]}), 200
+    try:
+        items = svc.list_past_courses()
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500
+    return jsonify(
+        {"courses": [CoursePastOut.model_validate(i).model_dump() for i in items]}
+    ), 200
 
 
 @course_bp.get("/search")
 @swag_from(SEARCH_COURSES_DOC)
 def search_courses():
     """Search for courses."""
-    q = (request.args.get("q") or "").strip()
-    items = svc.search_courses(q) if q else []
+    try: 
+        q = (request.args.get("q") or "").strip()
+        items = svc.search_courses(q) if q else []
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500
     return jsonify({"courses": [CourseListOut.model_validate(i).model_dump() for i in items]}), 200
 
 
-@course_bp.post("")
+@course_bp.post("/")
 @swag_from(CREATE_COURSE_DOC)
 @admin_required_jwt
 def create_course():
@@ -73,6 +97,9 @@ def create_course():
         validated = CourseCreateIn.model_validate(data)
         item = svc.create_course(validated)
         return jsonify(CourseOut.model_validate(item).model_dump()), 201
+
+    except ValidationError as ve:
+        return jsonify({"error": "validation_error", "details": ve.errors()}), 422
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     except Exception:
@@ -92,10 +119,15 @@ def delete_course(course_id: int):
             "course_record": course_record,
         }
         return jsonify(msg), 200
+
+    except ValidationError as ve:
+        return jsonify({"error": "validation_error", "details": ve.errors()}), 422
     except NotFoundError as e:
         return jsonify({"error": str(e)}), 404
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500
 
 
 # TODO: Add swagger doc for this
@@ -110,7 +142,12 @@ def update_course(course_id: int):
         validated = CourseUpdateIn.model_validate(data)
         item = svc.update_course(course_id, validated)
         return jsonify(CourseOut.model_validate(item).model_dump()), 200
+
+    except ValidationError as ve:
+        return jsonify({"error": "validation_error", "details": ve.errors()}), 422
     except NotFoundError as e:
         return jsonify({"error": str(e)}), 404
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500

@@ -19,11 +19,15 @@ class ICourseRepository(ABC):
     """
 
     @abstractmethod
-    def list_courses(self) -> Sequence[Course]:
+    def list_courses(self, limit: int = 20, offset: int = 0) -> Sequence[Course]:
         """List all courses ordered by end date (descending), then by ID.
 
+        Args:
+            limit: Maximum number of records to return.
+            offset: SQL offset (0-indexed) for pagination.
+
         Returns:
-            Sequence of all courses with relationships loaded.
+            Sequence of courses with relationships loaded.
         """
         ...
 
@@ -137,6 +141,7 @@ class ICourseRepository(ABC):
             The deleted course, or None if not found.
         """
 
+
 class CourseRepository(BaseRepository[Course], ICourseRepository):
     """Repository implementation for managing Course entities.
 
@@ -164,15 +169,22 @@ class CourseRepository(BaseRepository[Course], ICourseRepository):
             selectinload(Course.venue),
         )
 
-    def list_courses(self) -> Sequence[Course]:
+    def list_courses(self, limit: int = 20, offset: int = 0) -> Sequence[Course]:
         """
         List all courses ordered by end date (descending), then by ID.
 
-        :return: Sequence of all courses with relationships loaded.
+        :param limit: Maximum number of records to return.
+        :param offset: SQL offset (0-indexed) for pagination.
+        :return: Sequence of courses with relationships loaded.
         """
-        stmt = self._base_query().order_by(
-            Course.end_date.desc().nulls_last(),
-            Course.id.desc(),
+        stmt = (
+            self._base_query()
+            .order_by(
+                Course.end_date.desc().nulls_last(),
+                Course.id.desc(),
+            )
+            .limit(limit=limit)
+            .offset(offset=offset)
         )
         rows = self.session.execute(stmt).scalars().all()
         return rows
@@ -336,12 +348,12 @@ class CourseRepository(BaseRepository[Course], ICourseRepository):
 
         self.session.commit()
         return course
-    
+
     def delete_course(self, course_id: int) -> Course | None:
         course = self.get_course_by_id(course_id)
         if course is None:
             return None
-        
+
         self.session.delete(course)
         self.session.commit()
         return course

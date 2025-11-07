@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import UTC, date, datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.dtos.delivery import DeliveryModeOut
 from app.dtos.instructor import InstructorOut
@@ -68,6 +68,7 @@ class CourseCreateIn(BaseModel):
     capacity: int | None = None
     session_counts: int | None = None
     session_duration_minutes: int | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class CourseUpdateIn(BaseModel):
@@ -83,3 +84,4 @@ class CourseUpdateIn(BaseModel):
     capacity: int | None = None
     session_counts: int | None = None
     session_duration_minutes: int | None = None
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

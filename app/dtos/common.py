@@ -11,12 +11,16 @@ class SortQueryDTO(BaseModel):
     sort: str = Field(default="id", description="Field to sort by")
     direction: Literal["asc", "desc"] = Field(default="asc", description="Sort direction")
 
+class PaginationQueryDTO(BaseModel):
+    """DTO for pagination query parameters."""
 
-class Pagination(BaseModel):
-    """DTO for pagination payloads."""
-
-    offset: int = Field(default=1, ge=1, description="Offset number (1-indexed)")
+    page: int = Field(default=1, ge=1, description="Page number (1-indexed)")
     limit: int = Field(default=20, ge=1, le=100, description="Items per page")
+
+    @property
+    def offset(self) -> int:
+        """Calculate offset for database query."""
+        return (self.page - 1) * self.limit
 
 
 class SearchQueryDTO(BaseModel):

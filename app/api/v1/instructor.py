@@ -22,7 +22,7 @@ instructor_bp = Blueprint("instructor", __name__)
 svc = InstructorService()
 
 
-@instructor_bp.get("")
+@instructor_bp.get("/")
 @swag_from(LIST_INSTRUCTORS_DOC)
 def list_instructors():
     """List all instructors."""
@@ -46,6 +46,8 @@ def get_instructor(instructor_id: int):
         return jsonify(item.model_dump()), 200
     except NotFoundError:
         return jsonify({"error": "Not found"}), 404
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @instructor_bp.post("")
@@ -84,6 +86,8 @@ def update_instructor(instructor_id: int):
         return jsonify({"error": "Not found"}), 404
     except (ValidationError, AlreadyExistsError) as e:
         return jsonify({"error": str(e)}), 400
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @instructor_bp.delete("/<int:instructor_id>")
@@ -96,3 +100,5 @@ def delete_instructor(instructor_id: int):
         return jsonify({"message": "Deleted"}), 204
     except NotFoundError:
         return jsonify({"error": "Not found"}), 404
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500

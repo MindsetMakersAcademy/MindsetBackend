@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.dtos.admin import AuthorMini
 
@@ -28,19 +28,10 @@ class PostCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=160)
     summary: str | None = Field(None, max_length=300)
     content: str = Field(..., min_length=1)
-    status: Literal["draft", "published", "archived"] = Field(default="draft")
+    status: Literal["draft", "published", "archived"] = "draft"
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     published_at: datetime | None = None
     author_id: int
-
-    @field_validator("status")
-    @classmethod
-    def _status_ok(cls, v: str | None) -> str | None:
-        if v is None:
-            return v
-        if v not in {"draft", "published", "archived"}:
-            raise ValueError("status must be one of: draft|published|archived")
-        return v
-
 
 class PostUpdate(BaseModel):
     slug: str | None = Field(None, min_length=1, max_length=160)
@@ -48,7 +39,7 @@ class PostUpdate(BaseModel):
     summary: str | None = Field(None, max_length=300)
     content: str | None = None
     status: str | None = None
-    published_at: datetime | None = None
     author_id: int | None = None
+    updated_at : datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     model_config = ConfigDict(extra="forbid")
