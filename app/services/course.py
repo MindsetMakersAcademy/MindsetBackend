@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from sqlalchemy.orm import Session, scoped_session
 
 from app.db import db
-from app.dtos import CourseCreateIn, CourseOut, CoursePastOut, CourseUpdateIn
+from app.dtos.course import CourseCreateIn, CourseOut, CoursePastOut, CourseUpdateIn
 from app.exceptions import NotFoundError
 from app.models import Course
 from app.repositories.course import CourseRepository, ICourseRepository

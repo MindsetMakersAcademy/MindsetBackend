@@ -7,7 +7,7 @@ from pydantic import ValidationError
 from werkzeug.security import check_password_hash
 
 from app.auth.jwt import admin_required_jwt, encode_jwt
-from app.dtos import AdminCreate, AdminLoginIn, AdminLoginOut, AdminUpdate
+from app.dtos.admin import AdminCreate, AdminLoginIn, AdminLoginOut, AdminUpdate
 from app.exceptions import ConflictError, NotFoundError
 from app.services.admin import AdminService
 

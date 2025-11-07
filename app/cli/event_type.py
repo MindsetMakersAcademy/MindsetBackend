@@ -14,7 +14,7 @@ import sys
 import rich_click as click
 from flask.cli import with_appcontext
 
-from app.dtos import EventTypeCreateDTO, EventTypeReadDTO, EventTypeUpdateDTO
+from app.dtos.event import EventTypeCreateDTO, EventTypeReadDTO, EventTypeUpdateDTO
 from app.exceptions import AlreadyExistsError, NotFoundError, ValidationError
 from app.services.event_type import EventTypeService
 

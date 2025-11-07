@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, scoped_session
 
 from app.db import db
-from app.dtos import DeliveryModeCreateDTO, DeliveryModeReadDTO, DeliveryModeUpdateDTO
+from app.dtos.delivery import DeliveryModeCreateDTO, DeliveryModeReadDTO, DeliveryModeUpdateDTO
 from app.exceptions import AlreadyExistsError, NotFoundError, ValidationError
 from app.repositories.delivery_mode import DeliveryModeRepository
 

@@ -1,4 +1,3 @@
-# app/services/event_type.py
 from __future__ import annotations
 
 from typing import Literal
@@ -8,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, scoped_session
 
 from app.db import db
-from app.dtos import EventTypeCreateDTO, EventTypeReadDTO, EventTypeUpdateDTO
+from app.dtos.event import EventTypeCreateDTO, EventTypeReadDTO, EventTypeUpdateDTO
 from app.exceptions import AlreadyExistsError, NotFoundError, ValidationError
 from app.repositories.event_type import EventTypeRepository
 

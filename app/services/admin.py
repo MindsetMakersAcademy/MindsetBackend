@@ -4,7 +4,7 @@ from collections.abc import Sequence
 
 from werkzeug.security import generate_password_hash
 
-from app.dtos import AdminCreate, AdminOut, AdminUpdate
+from app.dtos.admin import AdminCreate, AdminOut, AdminUpdate
 from app.exceptions import ConflictError, NotFoundError
 from app.models import Admin
 from app.repositories import AdminRepository, IAdminRepository

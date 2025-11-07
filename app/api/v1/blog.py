@@ -4,7 +4,7 @@ from flask import Blueprint, jsonify, request
 from pydantic import ValidationError
 
 from app.auth.jwt import admin_required_jwt
-from app.dtos import PostCreate, PostUpdate
+from app.dtos.blog import PostCreate, PostUpdate
 from app.exceptions import ConflictError, NotFoundError
 from app.services.blog import BlogService
 
@@ -77,6 +77,7 @@ def list_all():
     responses:
       200: {description: OK}
     """
+    payload = PostCreate.model_validate_json(request.data or b"{}")
     items = [p.model_dump() for p in svc.list_all()]
     return jsonify(items), 200
 

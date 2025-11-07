@@ -6,7 +6,7 @@ from flasgger import swag_from  # type: ignore
 from flask import Blueprint, jsonify, request
 
 from app.auth.jwt import admin_required_jwt
-from app.dtos import InstructorCreateDTO, InstructorUpdateDTO
+from app.dtos.instructor import InstructorCreateDTO, InstructorUpdateDTO
 from app.exceptions import AlreadyExistsError, NotFoundError, ValidationError
 from app.services.instructor import InstructorService
 

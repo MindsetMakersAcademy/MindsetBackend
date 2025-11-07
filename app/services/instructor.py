@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, scoped_session
 
 from app.db import db
-from app.dtos import InstructorCreateDTO, InstructorReadDTO, InstructorUpdateDTO
+from app.dtos.instructor import InstructorCreateDTO, InstructorReadDTO, InstructorUpdateDTO
 from app.exceptions import AlreadyExistsError, NotFoundError, ValidationError
 from app.repositories.instructor import IInstructorRepository, InstructorRepository
 

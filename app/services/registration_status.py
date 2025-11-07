@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, scoped_session
 
 from app.db import db
-from app.dtos import (
+from app.dtos.registration import (
     RegistrationStatusCreateDTO,
     RegistrationStatusReadDTO,
     RegistrationStatusUpdateDTO,

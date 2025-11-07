@@ -14,7 +14,7 @@ import sys
 import rich_click as click
 from flask.cli import with_appcontext
 
-from app.dtos import VenueCreateDTO, VenueReadDTO, VenueUpdateDTO
+from app.dtos.venue import VenueCreateDTO, VenueReadDTO, VenueUpdateDTO
 from app.exceptions import NotFoundError, ValidationError
 from app.services.venue import VenueService
 

@@ -10,7 +10,8 @@ from app.api.v1.swagger_docs import (
     LIST_PAST_COURSES_DOC,
     SEARCH_COURSES_DOC,
 )
-from app.dtos import (
+from app.auth.jwt import admin_required_jwt
+from app.dtos.course import (
     CourseCreateIn,
     CourseListOut,
     CourseOut,
@@ -19,7 +20,6 @@ from app.dtos import (
 )
 from app.exceptions import NotFoundError
 from app.services.course import CourseService
-from app.auth.jwt import admin_required_jwt
 
 course_bp = Blueprint("course", __name__)
 svc = CourseService()

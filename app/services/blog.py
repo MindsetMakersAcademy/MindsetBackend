@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from app.dtos import PostCreate, PostOut, PostUpdate
+from app.dtos.blog import PostCreate, PostOut, PostUpdate
 from app.exceptions import ConflictError, NotFoundError
 from app.repositories.blog import BlogRepository, IBlogRepository
 
