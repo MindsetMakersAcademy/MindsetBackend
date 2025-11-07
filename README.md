@@ -67,7 +67,9 @@ app/
 ├── config.py              # Application configuration
 ├── db.py                  # Database connection setup
 └── exceptions.py          # Custom exceptions
-```Key components:
+```
+
+### Key components:
 
 1. **API Layer** (`app/api/`)
    - Route handlers for all entities (admin, blog, course, instructor)
