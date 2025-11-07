@@ -14,7 +14,7 @@ import sys
 import rich_click as click
 from flask.cli import with_appcontext
 
-from app.dtos import DeliveryModeCreateDTO, DeliveryModeReadDTO, DeliveryModeUpdateDTO
+from app.dtos.delivery import DeliveryModeCreateDTO, DeliveryModeReadDTO, DeliveryModeUpdateDTO
 from app.exceptions import AlreadyExistsError, NotFoundError, ValidationError
 from app.services.delivery_mode import DeliveryModeService
 

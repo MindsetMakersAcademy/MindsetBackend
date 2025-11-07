@@ -7,7 +7,7 @@ from pydantic import ValidationError
 from werkzeug.security import check_password_hash
 
 from app.auth.jwt import admin_required_jwt, encode_jwt
-from app.dtos import AdminCreate, AdminLoginIn, AdminLoginOut, AdminUpdate
+from app.dtos.admin import AdminCreate, AdminLoginIn, AdminLoginOut, AdminUpdate
 from app.exceptions import ConflictError, NotFoundError
 from app.services.admin import AdminService
 
@@ -51,6 +51,8 @@ def login() -> tuple[Any, ...]:
 
     except ValidationError as ve:
         return jsonify({"error": "validation_error", "details": ve.errors()}), 422
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @admin_bp.get("/")
@@ -64,7 +66,10 @@ def list_admins() -> tuple[Any, ...]:
       200:
         description: List of admins
     """
-    items = [a.model_dump() for a in svc.list_admins()]
+    try:
+      items = [a.model_dump() for a in svc.list_admins()]
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500
     return jsonify(items), 200
 
 
@@ -89,6 +94,8 @@ def get_admin(admin_id: int) -> tuple[Any, ...]:
         return jsonify(item.model_dump()), 200
     except NotFoundError:
         return jsonify({"error": "Not found"}), 404
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @admin_bp.post("/")
@@ -122,6 +129,8 @@ def create_admin() -> tuple[Any, ...]:
         return jsonify({"error": str(e)}), 409
     except ValidationError as ve:
         return jsonify({"error": "validation_error", "details": ve.errors()}), 422
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @admin_bp.patch("/<int:admin_id>")
@@ -149,6 +158,8 @@ def update_admin(admin_id: int) -> tuple[Any, ...]:
         return jsonify({"error": "Not found"}), 404
     except ValidationError as ve:
         return jsonify({"error": "validation_error", "details": ve.errors()}), 422
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @admin_bp.delete("/<int:admin_id>")
@@ -172,3 +183,5 @@ def delete_admin(admin_id: int) -> tuple[Any, ...]:
         return "", 204
     except NotFoundError:
         return jsonify({"error": "Not found"}), 404
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500

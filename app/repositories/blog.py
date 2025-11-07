@@ -19,12 +19,12 @@ class IBlogRepository(ABC):
     """
 
     @abstractmethod
-    def list_posts(self, *, limit: int = 100, offset: int = 0) -> Sequence[BlogPost]:
+    def list_posts(self, *, offset: int = 0, limit: int = 20) -> Sequence[BlogPost]:
         """List posts (any status), newest first."""
         ...
 
     @abstractmethod
-    def list_published(self, *, limit: int = 100, offset: int = 0) -> Sequence[BlogPost]:
+    def list_published(self, *, offset: int = 0, limit: int = 20) -> Sequence[BlogPost]:
         """List only published posts, ordered by published_at desc."""
         ...
 
@@ -39,7 +39,7 @@ class IBlogRepository(ABC):
         ...
 
     @abstractmethod
-    def search_posts(self, q: str, *, limit: int = 100, offset: int = 0) -> Sequence[BlogPost]:
+    def search_posts(self, q: str, *, offset: int = 0, limit: int = 20) -> Sequence[BlogPost]:
         """Case-insensitive search over title/summary/content."""
         ...
 
@@ -100,11 +100,11 @@ class BlogRepository(BaseRepository[BlogPost], IBlogRepository):
         stmt = self._base_query().where(BlogPost.id == post_id)
         return self.session.execute(stmt).scalars().first()
 
-    def list_posts(self, *, limit: int = 100, offset: int = 0) -> Sequence[BlogPost]:
+    def list_posts(self, *, offset: int = 0, limit: int = 20) -> Sequence[BlogPost]:
         stmt = self._base_query().order_by(BlogPost.id.desc()).limit(limit).offset(offset)
         return self.session.execute(stmt).scalars().all()
 
-    def list_published(self, *, limit: int = 100, offset: int = 0) -> Sequence[BlogPost]:
+    def list_published(self, *, offset: int = 0, limit: int = 20) -> Sequence[BlogPost]:
         stmt = (
             self._base_query()
             .where(BlogPost.status == "published")

@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from sqlalchemy.orm import Session, scoped_session
 
 from app.db import db
-from app.dtos import CourseCreateIn, CourseOut, CoursePastOut, CourseUpdateIn
+from app.dtos.course import CourseCreateIn, CourseOut, CoursePastOut, CourseUpdateIn
 from app.exceptions import NotFoundError
 from app.models import Course
 from app.repositories.course import CourseRepository, ICourseRepository
@@ -28,13 +28,17 @@ class CourseService:
         self.session = session or db.session
         self.repo = repo or CourseRepository(session)
 
-    def list_courses(self) -> list[CoursePastOut]:
-        """List all courses as DTOs.
+    def list_courses(self, offset: int = 0, limit: int = 20) -> list[CoursePastOut]:
+        """List all courses as DTOs with pagination.
+
+        Args:
+            offset: 1-indexed page number
+            limit: items per page
 
         Returns:
-            List of all courses ordered by date.
+            List of courses for the requested page ordered by date.
         """
-        rows = self.repo.list_courses()
+        rows = self.repo.list_courses(limit=limit, offset=offset)
         return [CoursePastOut.model_validate(r) for r in rows]
 
     def get_course_by_id(self, course_id: int) -> CoursePastOut:

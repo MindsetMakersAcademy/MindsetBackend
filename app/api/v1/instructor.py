@@ -6,7 +6,7 @@ from flasgger import swag_from  # type: ignore
 from flask import Blueprint, jsonify, request
 
 from app.auth.jwt import admin_required_jwt
-from app.dtos import InstructorCreateDTO, InstructorUpdateDTO
+from app.dtos.instructor import InstructorCreateDTO, InstructorUpdateDTO
 from app.exceptions import AlreadyExistsError, NotFoundError, ValidationError
 from app.services.instructor import InstructorService
 
@@ -22,7 +22,7 @@ instructor_bp = Blueprint("instructor", __name__)
 svc = InstructorService()
 
 
-@instructor_bp.get("")
+@instructor_bp.get("/")
 @swag_from(LIST_INSTRUCTORS_DOC)
 def list_instructors():
     """List all instructors."""
@@ -46,6 +46,8 @@ def get_instructor(instructor_id: int):
         return jsonify(item.model_dump()), 200
     except NotFoundError:
         return jsonify({"error": "Not found"}), 404
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @instructor_bp.post("")
@@ -84,6 +86,8 @@ def update_instructor(instructor_id: int):
         return jsonify({"error": "Not found"}), 404
     except (ValidationError, AlreadyExistsError) as e:
         return jsonify({"error": str(e)}), 400
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @instructor_bp.delete("/<int:instructor_id>")
@@ -96,3 +100,5 @@ def delete_instructor(instructor_id: int):
         return jsonify({"message": "Deleted"}), 204
     except NotFoundError:
         return jsonify({"error": "Not found"}), 404
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500

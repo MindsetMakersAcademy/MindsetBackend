@@ -2,10 +2,32 @@
 This repository contains the backend part of the Mindset website.
 A Flask-based REST API for managing courses, blogs, instructors, and admin users. Built with Flask, SQLAlchemy 2.x, and Pydantic v2.
 
-## Documentation
+ ## Documentation
 
 - **[Database Schema & ERD](docs/DATABASE.md)** - Complete database entity relationship diagram, table definitions, and relationships
-- **Postman Collection:** See the `postman/` folder for a ready-to-use Postman collection covering all API endpoints (admins, blogs, courses, instructors). Import into Postman for easy testing.
+- **[Environment Variables](docs/ENV.md)** - Complete guide to .env configuration flags
+- **[Postman Setup](docs/POSTMAN.md)** - Detailed Postman collection setup and usage
+
+## Postman Collection
+
+The project includes a ready-to-use Postman collection in `postman/`:
+
+```
+postman/
+└── MindsetBackend API.postman_collection.json   # Complete API collection
+```
+
+Features:
+- Example requests for all endpoints (admin, blog, course, instructor)
+- Automatic JWT token handling via collection variables
+- Environment-aware with configurable base URL
+
+Quick import:
+1. Open Postman
+2. Import → Browse → select `postman/MindsetBackend API.postman_collection.json`
+3. Set collection variables (base_url, admin credentials)
+
+See [docs/POSTMAN.md](docs/POSTMAN.md) for detailed setup instructions, variables, and usage tips.
 
 ## Codebase Structure
 
@@ -13,22 +35,39 @@ The project follows a clean, modular architecture:
 
 ```
 app/
-├── api/                    # HTTP layer
+├── api/                      # HTTP layer
 │   └── v1/
-│       ├── admin.py        # Admin endpoints
-│       ├── blog.py         # Blog endpoints
-│       ├── course.py       # Course endpoints
-│       ├── instructor.py   # Instructor endpoints
-│       └── swagger_docs.py # Swagger documentation
+│       ├── admin.py         # Admin endpoints
+│       ├── blog.py          # Blog endpoints
+│       ├── course.py        # Course endpoints
+│       ├── instructor.py    # Instructor endpoints
+│       └── swagger_docs.py  # Swagger documentation
+├── auth/
+│   └── jwt.py              # JWT auth implementation
+├── cli/                     # CLI commands implementation
+│   ├── admin.py            # Admin management commands
+│   ├── db.py               # Database commands (seed, etc)
+│   ├── delivery_mode.py    # Delivery mode management
+│   ├── event_type.py       # Event type management
+│   ├── registration_status.py  # Registration status commands
+│   └── venue.py            # Venue management commands
+├── dtos/                    # Request/Response DTOs (Pydantic)
+│   ├── admin.py            # Admin DTOs
+│   ├── blog.py             # Blog DTOs
+│   ├── common.py           # Shared DTO components
+│   ├── course.py           # Course DTOs
+│   ├── delivery.py         # Delivery mode DTOs
+│   ├── event.py            # Event DTOs
+│   ├── instructor.py       # Instructor DTOs
+│   ├── registration.py     # Registration DTOs
+│   └── venue.py            # Venue DTOs
 ├── models.py               # SQLAlchemy models
-├── dtos.py                 # Pydantic request/response models
 ├── services/               # Business logic layer
 ├── repositories/           # Data access layer
-├── config.py               # Application configuration
-├── db.py                   # Database connection setup
-```
-
-Key components:
+├── config.py              # Application configuration
+├── db.py                  # Database connection setup
+└── exceptions.py          # Custom exceptions
+```Key components:
 
 1. **API Layer** (`app/api/`)
    - Route handlers for all entities (admin, blog, course, instructor)
@@ -122,22 +161,26 @@ Key entities:
 
 **For detailed schema information including relationships, constraints, and field definitions, see [DATABASE.md](docs/DATABASE.md).**
 
-### Data Transfer Objects (`app/dtos.py`)
+### Data Transfer Objects (`app/dtos/`)
 
-Pydantic models for API request/response validation:
+Pydantic v2 models are now grouped under `app/dtos/` with one module per resource.
 
-```python
-class CourseOut(BaseModel):
-    id: int
-    title: str
-    delivery_mode: DeliveryModeOut
-    instructors: list[InstructorOut] = []
+Examples:
+
+```
+app/dtos/
+├── admin.py           # Admin DTOs (AdminIn, AdminOut, etc.)
+├── blog.py            # BlogCreateIn, BlogOut, BlogUpdateIn
+├── course.py          # CourseCreateIn, CourseOut, CourseUpdateIn
+├── instructor.py      # Instructor DTOs
+└── common.py          # Shared DTO fragments and helpers
 ```
 
-DTO types:
-- `*Out`: Response models (e.g., `CourseOut`, `InstructorOut`)
-- `*In`: Request models (e.g., `CourseCreateIn`, `CourseUpdateIn`)
-- All DTOs have validation rules and documentation
+DTO naming convention:
+- `*Out` — response models (e.g., `CourseOut`)
+- `*In` — request models (e.g., `CourseCreateIn`, `CourseUpdateIn`)
+
+All DTOs include validation rules. Move validation logic into DTOs where appropriate (for example dates and input normalization).
 
 ### Service Layer (`app/services/`)
 
@@ -187,11 +230,18 @@ flask --app app:create_app run --host 0.0.0.0 --port 8000
 
 ## Configuration
 
-Environment variables:
-- `PORT` - Server port (default: 8000)
-- `DATABASE_URL` - SQLAlchemy URL (default: SQLite)
-- `SECRET_KEY` - Flask secret key
-- `SQL_ECHO` - Enable SQL logging (1/0)
+Environment variables are loaded from `.env` using the project's settings code. For a complete listing and explanation see `docs/ENV.md`.
+
+Important variables include (short summary):
+
+- `PORT` — Server port (default: 8000)
+- `DATABASE_URL` — SQLAlchemy URL (default: SQLite)
+- `SECRET_KEY` — Flask secret key
+- `RUN_MIGRATIONS_ON_START` — If `true`, run Alembic migrations during container start (default: `true`).
+- `RUN_SEEDS_ON_START` — If `true`, run the DB seed command after migrations. Useful for first-time setup to populate lookup data. (default: `false`).
+- `CREATE_SUPERUSER_ON_BOOT` — If `true`, the entrypoint will attempt to create a superuser from `SUPERUSER_*` vars if none exists.
+
+See [ENV.md](docs/ENV.md) for details and recommended dev `.env` examples.
 
 
 ## 🧭 Command Line Interface (CLI)

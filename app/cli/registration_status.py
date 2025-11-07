@@ -16,7 +16,7 @@ import sys
 import rich_click as click
 from flask.cli import with_appcontext
 
-from app.dtos import (
+from app.dtos.registration import (
     RegistrationStatusCreateDTO,
     RegistrationStatusReadDTO,
     RegistrationStatusUpdateDTO,

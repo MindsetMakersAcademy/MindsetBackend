@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import rich_click as click
 
-from app.dtos import AdminCreate, AdminUpdate
+from app.dtos.admin import AdminCreate, AdminUpdate
 from app.services.admin import AdminService
+
 from .common import CONTEXT_SETTINGS
 
 admin_group = click.Group(

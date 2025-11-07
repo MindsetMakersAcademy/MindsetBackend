@@ -53,6 +53,18 @@ admin_cli() {
   fi
 }
 
+# General helper for running db-related CLI commands. Some projects expose
+# a top-level `cli` group (so commands look like `flask cli db seed`), while
+# others expose `db` directly (so `flask db seed`). This helper picks the
+# right form and forwards args (e.g. `seed`, `upgrade`).
+db_cli() {
+  if run_flask --help 2>/dev/null | grep -qE '^\s+cli\s'; then
+    run_flask cli db "$@"
+  else
+    run_flask db "$@"
+  fi
+}
+
 # --- ensure DB directory exists (for sqlite) -------------------------------
 
 DB_URL="${DATABASE_URL:-}"
@@ -79,6 +91,19 @@ if [ "${RUN_MIGRATIONS_ON_START:-true}" = "true" ]; then
     # Non-sqlite (e.g., Postgres): safe to run every boot (idempotent per revision)
     echo ">> Running migrations (non-SQLite)..."
     run_flask db upgrade
+  fi
+fi
+
+# Optional: run DB seed step to populate reference data (countries, enums,
+# default lookups, etc). Controlled by RUN_SEEDS_ON_START (true|false).
+# Example: set RUN_SEEDS_ON_START=true in .env to enable.
+if [ "${RUN_SEEDS_ON_START:-false}" = "true" ]; then
+  echo ">> RUN_SEEDS_ON_START is true — running DB seed..."
+  # Use db_cli so we support both `flask cli db seed` and `flask db seed` forms
+  if db_cli seed; then
+    echo ">> DB seed completed successfully."
+  else
+    echo ">> Warning: DB seed command failed (continuing startup)."
   fi
 fi
 

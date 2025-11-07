@@ -6,7 +6,7 @@ from typing import Literal
 from sqlalchemy.orm import Session, scoped_session
 
 from app.db import db
-from app.dtos import VenueCreateDTO, VenueReadDTO, VenueUpdateDTO
+from app.dtos.venue import VenueCreateDTO, VenueReadDTO, VenueUpdateDTO
 from app.exceptions import NotFoundError, ValidationError
 from app.repositories.venue import VenueRepository
 

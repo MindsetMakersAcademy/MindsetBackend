@@ -4,7 +4,8 @@ from flask import Blueprint, jsonify, request
 from pydantic import ValidationError
 
 from app.auth.jwt import admin_required_jwt
-from app.dtos import PostCreate, PostUpdate
+from app.dtos.blog import PostCreate, PostUpdate
+from app.dtos.common import PaginationQueryDTO
 from app.exceptions import ConflictError, NotFoundError
 from app.services.blog import BlogService
 
@@ -21,9 +22,22 @@ def list_published():
     responses:
       200:
         description: List of published posts
+      422:
+        description: validation error
+      500:
+        description: Internal server error
     """
-    items = [p.model_dump() for p in svc.list_published()]
-    return jsonify(items), 200
+    try:
+        data = request.args.to_dict()
+        validated = PaginationQueryDTO.model_validate(data)
+        items = svc.list_published(offset=validated.offset, limit=validated.limit)
+        response_items = [i.model_dump() for i in items]
+    except ValidationError as ve:
+        return jsonify({"error": "validation_error", "details": ve.errors()}), 422
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500
+    return jsonify(response_items), 200
+
 
 @blog_bp.get("/<int:post_id>")
 def get_by_id(post_id: int):
@@ -45,7 +59,10 @@ def get_by_id(post_id: int):
         return jsonify(item.model_dump()), 200
     except NotFoundError:
         return jsonify({"error": "Not found"}), 404
-      
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500
+
+
 @blog_bp.get("/slug/<string:slug>")
 def get_by_slug(slug: str):
     """
@@ -66,6 +83,8 @@ def get_by_slug(slug: str):
         return jsonify(item.model_dump()), 200
     except NotFoundError:
         return jsonify({"error": "Not found"}), 404
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @blog_bp.get("/")
@@ -75,10 +94,23 @@ def list_all():
     ---
     tags: [blog]
     responses:
-      200: {description: OK}
+      200:
+        description: List of published posts
+      422:
+        description: validation error
+      500:
+        description: Internal server error
     """
-    items = [p.model_dump() for p in svc.list_all()]
-    return jsonify(items), 200
+    try:
+        data = request.args.to_dict() or {}
+        validated = PaginationQueryDTO.model_validate(data)
+        items = svc.list_all(offset=validated.offset, limit=validated.limit)
+        response_items = [i.model_dump() for i in items]
+    except ValidationError as ve:
+        return jsonify({"error": "validation_error", "details": ve.errors()}), 422
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500
+    return jsonify(response_items), 200
 
 
 @blog_bp.get("/search")
@@ -96,9 +128,13 @@ def search_posts():
     responses:
       200: {description: OK}
     """
-    q = (request.args.get("q") or "").strip()
-    items = [p.model_dump() for p in svc.search(q)] if q else []
+    try:
+      q = (request.args.get("q") or "").strip()
+      items = [p.model_dump() for p in svc.search(q)] if q else []
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500
     return jsonify(items), 200
+
 
 @blog_bp.post("/")
 @admin_required_jwt
@@ -126,6 +162,8 @@ def create_post():
         return jsonify({"error": str(e)}), 409
     except ValidationError as ve:
         return jsonify({"error": "validation_error", "details": ve.errors()}), 422
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @blog_bp.patch("/<int:post_id>")
@@ -144,6 +182,7 @@ def update_post(post_id: int):
       200: {description: Updated}
       404: {description: Not found}
       422: {description: Validation error}
+      500: {description: Internal server error}
     """
     try:
         payload = PostUpdate.model_validate_json(request.data or b"{}")
@@ -153,6 +192,8 @@ def update_post(post_id: int):
         return jsonify({"error": "Not found"}), 404
     except ValidationError as ve:
         return jsonify({"error": "validation_error", "details": ve.errors()}), 422
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @blog_bp.delete("/<int:post_id>")
@@ -176,3 +217,5 @@ def delete_post(post_id: int):
         return "", 204
     except NotFoundError:
         return jsonify({"error": "Not found"}), 404
+    except Exception:
+        return jsonify({"error": "Internal server error"}), 500

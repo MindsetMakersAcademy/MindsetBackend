@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "890d5364-be91-4639-be56-e9856ff62f84",
 		"name": "MindsetBackend API",
-		"description": "Comprehensive Postman collection for MindsetBackend (admins, blogs, courses, instructors)",
+	"description": "Comprehensive Postman collection for MindsetBackend (admins, blogs, courses, instructors).\n\nSee ../docs/POSTMAN.md for import instructions, variable usage and environment notes (including required .env flags).",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "37626027"
 	},
