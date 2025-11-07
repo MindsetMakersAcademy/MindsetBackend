@@ -37,7 +37,7 @@ Superuser bootstrap
 - `SUPERUSER_NAME` — Full name for the auto-created superuser.
 - `SUPERUSER_PASSWORD` — Password for the auto-created superuser.
 
-Best practices
+Good practices
 
 - Keep sensitive values (e.g., `SECRET_KEY`, `SUPERUSER_PASSWORD`) out of version control. Use a secrets store for production setups.
 - For development, `.env` in the project root is convenient; in CI/CD, set variables in pipeline settings or use a secrets manager.
@@ -64,5 +64,3 @@ JWT_ACCESS_TOKEN_EXPIRES=120
 PORT=8000
 FRONTEND_URLS=["http://localhost:5173"]
 ```
-
-If you want me to add a small shell script that toggles seeds on/off or a set of recommended `.env` templates (`.env.local`, `.env.production`) I can add those as a follow-up.
