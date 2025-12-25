@@ -19,4 +19,4 @@ RUN chmod +x /entrypoint.sh
 
 EXPOSE 8000
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["uv", "run", "flask", "--app", "app:create_app", "run", "--host=0.0.0.0", "--port=8000"]
+CMD ["uv", "run", "gunicorn", "-b", "0.0.0.0:8000", "app:create_app()"]
