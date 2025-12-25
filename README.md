@@ -126,10 +126,57 @@ See the Postman collection for example requests and authentication flows.
 
 ## How to Run
 
-1. Install dependencies: `uv sync --frozen --no-dev`
-2. Run migrations: `flask db upgrade`
-3. Start the server: `uv run flask --app app:create_app run --host=0.0.0.0 --port=8000`
-4. Use Postman for API testing (see `postman/`)
+There are multiple ways to run the project. Docker (Compose) is the easiest and recommended option for getting a fully reproducible environment.
+
+Using Docker Compose (recommended):
+
+- Build and start (foreground):
+
+```bash
+docker compose up --build
+```
+
+- Start in detached mode:
+
+```bash
+docker compose up -d --build
+```
+
+- Run a one-off command (migrations, CLI, etc.):
+
+```bash
+docker compose run --rm api flask db upgrade
+docker compose run --rm api flask cli db seed
+```
+
+- Execute a command on a running container:
+
+```bash
+docker compose exec api flask db upgrade
+```
+
+Notes:
+- The Compose service `api` reads environment variables from `.env` (see [docs/ENV.md](docs/ENV.md)).
+- The `entrypoint.sh` included in the image can run migrations/seeds automatically if the corresponding env vars are set (`RUN_MIGRATIONS_ON_START`, `RUN_SEEDS_ON_START`).
+
+Using plain Docker (build + run):
+
+```bash
+docker build -t mindset-backend .
+docker run --rm -p 8000:8000 --env-file .env -v $(pwd)/data:/app/data mindset-backend
+```
+
+Running locally (virtualenv / UV):
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+uv sync --frozen --no-dev
+flask db upgrade
+uv run flask --app app:create_app run --host=0.0.0.0 --port 8000
+```
+
+Use Postman for API testing (see `postman/`)
 
 ## Contributing
 
@@ -366,12 +413,3 @@ Code quality:
 ruff check . && ruff format .
 uv run pyright
 ```
-
-
-## ✅ To-Do List
-
-* [ ] Review and document project requirements
-* [ ] Improve and optimize Docker setup
-* [ ] Set up CI/CD pipelines for build, test, and deployment
-* [ ] Write unit and integration tests
-* [ ] Improve documentation and update Swagger API docs
